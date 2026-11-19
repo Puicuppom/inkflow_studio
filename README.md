@@ -7,4 +7,6 @@
 - **ร้าน:** ปุ่มเฟือง (ใส่รหัส) → นำเข้า Template PSD · คลังการ์ตูน · ฟอนต์ · แก้ Layout → เผยแพร่ ได้ `index.html` ใหม่
 
 ## เผยแพร่ด้วย GitHub Pages
-Settings → Pages → Deploy from a branch → `main` / root
+1. Settings → Pages → Deploy from a branch → `main` / root
+2. สร้าง Fine-grained token: เลือกเฉพาะ repo นี้ · Permissions → Contents: Read and write
+3. หน้าตั้งค่าเว็บ → เผยแพร่ → ⚙ ใส่ token → กด **อัปเดตเว็บออนไลน์** (เว็บเปลี่ยนใน ~1 นาที)
