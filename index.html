@@ -611,7 +611,10 @@ function fext(o){ if(o.type==='image'&&o.outline&&o.outline.on){ const w=o.outli
 function fitBox(o){ const B=o.box; if(!B) return; const vert=B.vert!=null?B.vert:B.h>B.w*1.4; o.rot=vert?-90:0; const bw=vert?B.h:B.w, bh=vert?B.w:B.h;
   o.w=0; o.h=0; measure(o); const fp=fpad(o)*2, ic=o.frame&&o.frame.icon?1:0; const f=Math.min(Math.max(1,bw-fp)/(o.w+ic*o.h*1.05),Math.max(1,bh-fp)/o.h); o.size=Math.max(4,o.size*f); o.w=0; o.h=0; measure(o);
   for(let it=0;it<4;it++){ const E=fext(o), W=o.w+E.l+E.r, H=o.h+E.t+E.b, g=Math.min(bw/W,bh/H); if(g>=.999) break; o.size=Math.max(4,o.size*g*.995); o.w=0; o.h=0; measure(o); }
-  const E=fext(o), sh=(E.r-E.l)/2, sv=(E.b-E.t)/2; o.x=Math.round(B.x+B.w/2-o.w/2-sh); o.y=Math.round(B.y+B.h/2-o.h/2-sv); }
+  centerIn(o,B); }
+// วางชื่อ+กรอบ+ช่องการ์ตูนให้อยู่กลางกล่อง (คิดการหมุน: ชื่อแนวตั้งก็ตรงกลาง)
+function centerIn(o,B){ const E=fext(o), sh=(E.r-E.l)/2, sv=(E.b-E.t)/2, r=(o.rot||0)*Math.PI/180, c=Math.cos(r), s=Math.sin(r), dx=sh*c-sv*s, dy=sh*s+sv*c;
+  o.x=Math.round(B.x+B.w/2-o.w/2-dx); o.y=Math.round(B.y+B.h/2-o.h/2-dy); }
 // ขยายช่องชื่อให้เต็มพื้นที่ว่างรอบตัว เว้นห่างกัน 2 มม. (ห่างช่องการ์ตูน/QR 2 มม. · ไม่เกินขอบปลอดภัย)
 function textCells(L){ if(L.fixed) return L.texts.map(b=>({x:b.x,y:b.y,w:b.w,h:b.h,vert:b.vert})); const T=ED.tpl, mm=T.res/25.4, G=2*mm, G5=5*mm, S=safeRect();
   const B=L.texts.map(b=>({x0:b.x,y0:b.y,x1:b.x+b.w,y1:b.y+b.h,vert:b.h>b.w*1.4}));
@@ -1009,7 +1012,7 @@ function regrid(tx){ tx=tx.filter(o=>o.type==="text"&&o.cell&&o.box); if(!tx.len
   tx.forEach(o=>{ o.box=Object.assign({},o.cell); o.w=0; o.h=0; fitBox(o); });
   if(tx.length>1){ let fs=Math.min(...tx.map(o=>o.size)); const fitK=()=>Math.min(...tx.map(o=>{ o.size=fs; o.w=0; o.h=0; measure(o); const B=o.box, E=fext(o), v=Math.abs(Math.abs(o.rot||0)-90)<1, W=o.w+E.l+E.r, H=o.h+E.t+E.b; return v?Math.min(B.h/W,B.w/H):Math.min(B.w/W,B.h/H); }));
     for(let it=0;it<5;it++){ const k=fitK(); if(Math.abs(k-1)<.005) break; fs=Math.max(4,fs*k*.998); }
-    tx.forEach(o=>{ o.size=fs; o.w=0; o.h=0; measure(o); const B=o.box, E=fext(o); o.x=Math.round(B.x+B.w/2-o.w/2-(E.r-E.l)/2); o.y=Math.round(B.y+B.h/2-o.h/2-(E.b-E.t)/2); }); }
+    tx.forEach(o=>{ o.size=fs; o.w=0; o.h=0; measure(o); centerIn(o,o.box); }); }
   const grp=ax=>{ const m=new Map(); tx.forEach(o=>{ const k=Math.round(o.cell[ax]); if(!m.has(k)) m.set(k,[]); m.get(k).push(o); }); return [...m.entries()].sort((a,b)=>a[0]-b[0]).map(e=>e[1]); };
   const rows=grp("y"), cols=grp("x"), Y0=Math.min(...tx.map(o=>o.cell.y)), Y1=Math.max(...tx.map(o=>o.cell.y+o.cell.h)), X0=Math.min(...tx.map(o=>o.cell.x)), X1=Math.max(...tx.map(o=>o.cell.x+o.cell.w));
   const sp=(g,ax)=>{ const bs=g.map(aabb); return ax==="y"?[Math.min(...bs.map(b=>b.y)),Math.max(...bs.map(b=>b.y+b.h))]:[Math.min(...bs.map(b=>b.x)),Math.max(...bs.map(b=>b.x+b.w))]; };
@@ -1045,7 +1048,7 @@ function gridify(R,C,full){ R=Math.max(1,Math.min(30,R|0)); C=Math.max(1,Math.mi
   // ขนาดอักษรเท่ากันทุกช่อง (ใช้ค่าที่เล็กสุดที่ลงทุกช่อง)
   const tx=items.filter(o=>o.type==="text"&&o.box); if(tx.length>1){ let fs=Math.min(...tx.map(o=>o.size)); const fitK=()=>Math.min(...tx.map(o=>{ o.size=fs; o.w=0; o.h=0; measure(o); const B=o.box, E=fext(o), v=Math.abs(Math.abs(o.rot||0)-90)<1, W=o.w+E.l+E.r, H=o.h+E.t+E.b; return v?Math.min(B.h/W,B.w/H):Math.min(B.w/W,B.h/H); }));
     for(let it=0;it<5;it++){ const k=fitK(); if(Math.abs(k-1)<.005) break; fs=Math.max(4,fs*k*.998); }
-    tx.forEach(o=>{ o.size=fs; o.w=0; o.h=0; measure(o); const B=o.box, E=fext(o); o.x=Math.round(B.x+B.w/2-o.w/2-(E.r-E.l)/2); o.y=Math.round(B.y+B.h/2-o.h/2-(E.b-E.t)/2); }); }
+    tx.forEach(o=>{ o.size=fs; o.w=0; o.h=0; measure(o); centerIn(o,o.box); }); }
   // ชิดขอบพื้นที่พอดี: แถวแรกชิดบน แถวสุดท้ายชิดล่าง ระยะระหว่างแถว/คอลัมน์เท่ากัน (วัดจากขนาดจริงของแต่ละชิ้น)
   const rows=[...Array(R)].map((_,r)=>items.slice(r*C,r*C+C)), cols=[...Array(C)].map((_,c)=>items.filter((_,i)=>i%C===c));
   const span=(arr,ax)=>{ const bs=arr.map(aabb); return ax==="y"?[Math.min(...bs.map(b=>b.y)),Math.max(...bs.map(b=>b.y+b.h))]:[Math.min(...bs.map(b=>b.x)),Math.max(...bs.map(b=>b.x+b.w))]; };
