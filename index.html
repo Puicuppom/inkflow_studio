@@ -675,7 +675,7 @@ function addSlot(){ const s=Math.round(base()*.28); add({type:"slot",w:s,h:s}); 
 function addShape(kind){ const S=SHAPES[kind], B=base(); let w=Math.round(B*.6), h=Math.round(w*(S.ar||.5)); if(h>safeRect().h*.7){ h=Math.round(safeRect().h*.7); w=Math.round(h/(S.ar||.5)); }
   add({type:"shape",shape:kind,w,h,fill:S.outline?null:[0,25,5,0],stroke:{on:!!S.outline||true,w:STD_STROKE(),color:[0,85,20,0]},p:Object.assign({},S.p||{}),opacity:1}); }
 
-function fontReady(o){ if(!document.fonts||!document.fonts.load) return; document.fonts.load(fontStr(o),o.text||"ก").then(()=>{ if(ED.doc&&ED.doc.objects.includes(o)){ refit(o); if(o.gid){ (ED._rq=ED._rq||new Set()).add(o); clearTimeout(ED._rt); ED._rt=setTimeout(()=>{ const q=[...ED._rq]; ED._rq.clear(); regridOf(q); draw(); },30); } draw(); } }).catch(()=>{}); }
+function fontReady(o){ if(!document.fonts||!document.fonts.load) return; document.fonts.load(fontStr(o),o.text||"ก").then(()=>{ if(ED.doc&&ED.doc.objects.includes(o)){ refit(o); draw(); } }).catch(()=>{}); }
 // ---------- ข้อความ: วัดขนาด
 const mctx=document.createElement("canvas").getContext("2d");
 const fontStr=o=>`${o.italic?"italic ":""}${o.bold?"700":"400"} ${o.size}px "${o.font}", Kanit, sans-serif`;
@@ -932,7 +932,9 @@ let _soft=null; function softCp(){ if(!_soft) cp(); clearTimeout(_soft); _soft=s
 const linked=o=>o&&o.link?ED.doc.objects.filter(x=>x.type==="text"&&x.link===o.link):[o];
 // เลือกชิ้นเดียว = แก้ทั้งชุดที่เชื่อมกัน · เลือกเองหลายชิ้น = แก้เฉพาะที่เลือก
 const tgt=()=>{ const sel=selObjs(); if(sel.length>1) return sel; const out=new Set(); sel.forEach(o=>linked(o).forEach(x=>out.add(x))); return [...out]; };
-const refit=o=>{ if(o.type!=="text") return; if(o.box) fitBox(o); else measure(o); };
+const refit=o=>{ if(o.type!=="text") return; if(o.box) fitBox(o); else measure(o); if(o.gid&&o.cell&&o.box) qRegrid(o); };
+// ชื่อในตาราง: จัดทั้งชุดใหม่จากช่องเดิม (ขนาดเท่ากันทุกแถว) หลังแก้สี/กรอบ/ฟอนต์
+function qRegrid(o){ (ED._rq=ED._rq||new Set()).add(o); clearTimeout(ED._rt); ED._rt=setTimeout(()=>{ const q=[...ED._rq]; ED._rq.clear(); regridOf(q); draw(); },0); }
 function setText(v){ softCp(); const T=tgt().filter(o=>o.type==="text"); T.forEach(x=>{ x.text=v; refit(x); }); regridOf(T); draw(); }
 function regridOf(T){ const g=new Set(T.filter(o=>o.gid&&o.cell).map(o=>o.gid)); g.forEach(id=>regrid(ED.doc.objects.filter(o=>o.gid===id))); }
 // ตั้งขนาดตัวอักษรให้ทั้งกลุ่มที่เชื่อมกัน (คงจุดกึ่งกลางของแต่ละช่อง)
