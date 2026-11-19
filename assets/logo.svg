@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 80">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5BC0F8"/><stop offset="1" stop-color="#FF7EB6"/></linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3AA8EE"/><stop offset="1" stop-color="#F45FA0"/></linearGradient>
+    <linearGradient id="tx" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2B9FE6"/><stop offset="1" stop-color="#EC4F95"/></linearGradient>
+  </defs>
+  <g transform="translate(8 8)">
+    <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+    <path d="M30 11C30 11 45 27 45 38.5A15 15 0 0 1 15 38.5C15 27 30 11 30 11Z" fill="#fff"/>
+    <path d="M20.5 40.5c3-3.4 6.2-3.4 9.3 0s6.3 3.4 9.4 0" fill="none" stroke="url(#ink)" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M21.5 33.5c0-4 1.6-7.6 4.2-11" fill="none" stroke="#DCEFFC" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M49 10l1.9 4.6 4.6 1.9-4.6 1.9L49 23l-1.9-4.6-4.6-1.9 4.6-1.9z" fill="#fff"/>
+    <circle cx="53" cy="28" r="2.2" fill="#fff" opacity=".85"/>
+  </g>
+  <text x="88" y="46" font-family="'Nunito','Kanit','Segoe UI',sans-serif" font-size="34" font-weight="800" fill="url(#tx)">InkFlow</text>
+  <text x="90" y="66" font-family="'Nunito','Kanit','Segoe UI',sans-serif" font-size="14" font-weight="700" letter-spacing="5" fill="#8AA4BC">STUDIO</text>
+</svg>
