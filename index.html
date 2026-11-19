@@ -1052,6 +1052,9 @@ function distribute(ax){ const sel=selObjs(); if(sel.length<3) return; cp(); con
   const it=sel.map(o=>({o,b:aabb(o)})).sort((a,b)=>a.b[P]-b.b[P]); const first=it[0].b[P], last=it[it.length-1].b[P]+it[it.length-1].b[S];
   const gap=(last-first-it.reduce((s,i)=>s+i.b[S],0))/(it.length-1); let cur=first; it.forEach(i=>{ i.o[P]=Math.round(i.o[P]+cur-i.b[P]); cur+=i.b[S]+gap; }); draw(); side(); }
 function center(ax){ cp(); const S=safeRect(); selObjs().forEach(o=>{ if(ax==="h") o.x=Math.round(S.x+(S.w-o.w)/2); else o.y=Math.round(S.y+(S.h-o.h)/2); }); draw(); }
+// จัดแนว/กระจาย/กึ่งกลาง: โซนชื่อเลื่อนตามชื่อ · ชื่อที่ล็อกไม่ขยับ
+["align","distribute","center"].forEach(n=>{ const f=window[n]; window[n]=function(...a){ const m=new Map(selObjs().map(o=>[o,[o.x,o.y]])); f.apply(this,a);
+  m.forEach(([x,y],o)=>{ if(FIX(o)){ o.x=x; o.y=y; } else if(o.box){ o.box.x+=o.x-x; o.box.y+=o.y-y; } }); draw(); }; });
 function flip(){ cp(); selObjs().forEach(o=>o.flip=!o.flip); draw(); }
 
 // ---------- วาด
@@ -1134,7 +1137,7 @@ function initEvents(){
       ED.sel=withGroups(new Set(ED.doc.objects.filter(o=>!o.locked).filter(o=>{const b=aabb(o);return b.x<R.x+R.w&&b.x+b.w>R.x&&b.y<R.y+R.h&&b.y+b.h>R.y;}).map(o=>o.id))); draw(); return; }
     let dx=p.x-d.p0.x, dy=p.y-d.p0.y; if(!d.moved&&Math.hypot(dx,dy)*ED.z<3) return; if(!d.moved){ d.moved=true; cp(); }
     const sel=selObjs(), by=new Map(d.snap.map(s=>[s.id,s]));
-    if(d.mode==="move"){ const s=snapMove(d.B,dx,dy); sel.forEach(o=>{ const s0=by.get(o.id); if(s0){ o.x=Math.round(s0.x+s.dx); o.y=Math.round(s0.y+s.dy); } }); }
+    if(d.mode==="move"){ const s=snapMove(d.B,dx,dy); sel.forEach(o=>{ const s0=by.get(o.id); if(s0){ o.x=Math.round(s0.x+s.dx); o.y=Math.round(s0.y+s.dy); if(o.box&&s0.box){ o.box.x=s0.box.x+(o.x-s0.x); o.box.y=s0.box.y+(o.y-s0.y); } } }); }
     else if(d.mode==="rot"){ const o=sel[0], s0=by.get(o.id), cx=s0.x+s0.w/2, cy=s0.y+s0.h/2; let a=Math.atan2(p.y-cy,p.x-cx)*180/Math.PI+90; a=((a+540)%360)-180;
       if(e.shiftKey) a=Math.round(a/15)*15; else for(const q of [-180,-90,0,90,180]) if(Math.abs(a-q)<4) a=q; o.rot=Math.round(a); }
     else if(d.mode==="rs"){ const o=sel[0], s0=by.get(o.id), h=d.h, r=(s0.rot||0)*Math.PI/180, c=Math.cos(r), sn=Math.sin(r), cx=s0.x+s0.w/2, cy=s0.y+s0.h/2;
@@ -1145,7 +1148,7 @@ function initEvents(){
       const ncx=h.sx?(ax+h.sx*w/2):0, ncy=h.sy?(ay+h.sy*hh/2):0;
       o.w=Math.round(w); o.h=Math.round(hh); o.x=Math.round(cx+ncx*c-ncy*sn-w/2); o.y=Math.round(cy+ncx*sn+ncy*c-hh/2); }
     draw(); });
-  const end=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) ED.pinch=null; const d=ED.drag; ED.drag=null; ED.guides=[]; if(d&&d.moved&&d.mode!=="marq"){ const by=new Map(d.snap.map(s=>[s.id,s])); selObjs().forEach(o=>{ const s0=by.get(o.id); if(!s0) return; delete o.gid; delete o.cell; delete o.cellFree; if(o.box&&d.mode==="move"){ o.box.x+=o.x-s0.x; o.box.y+=o.y-s0.y; } if(ED.layoutMode!=null&&d.mode==="rs"&&o.type==="text") o.box=Object.assign(aabb(o),{vert:Math.abs(Math.abs(o.rot||0)-90)<1}); }); }
+  const end=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) ED.pinch=null; const d=ED.drag; ED.drag=null; ED.guides=[]; if(d&&d.moved&&d.mode!=="marq"){ const by=new Map(d.snap.map(s=>[s.id,s])); selObjs().forEach(o=>{ const s0=by.get(o.id); if(!s0) return; delete o.gid; delete o.cell; delete o.cellFree; if(ED.layoutMode!=null&&d.mode==="rs"&&o.type==="text") o.box=Object.assign(aabb(o),{vert:Math.abs(Math.abs(o.rot||0)-90)<1}); }); }
     if(d&&(d.moved||d.mode==="marq")){ side(); if(d.mode==="marq"&&ED.sel.size&&innerWidth<860){ closeSheets(); $("side").classList.add("open"); } } draw(); };
   st.addEventListener("dblclick",e=>{ const o=hit(pt(e)); if(o&&o.type==="text"){ ED.sel=new Set([o.id]); side(); if(innerWidth<860){ closeSheets(); $("side").classList.add("open"); } const t=$("txtIn"); if(t){ t.focus(); t.select(); } } });
   st.addEventListener("pointerup",end); st.addEventListener("pointercancel",end);
@@ -1173,7 +1176,7 @@ function initEvents(){
     else if(k==="delete"||k==="backspace"){ e.preventDefault(); del(); }
     else if(k==="escape"){ if(ED.dropper){ ED.dropper=null; $("stage").classList.remove("picking"); side(); return; } ED.sel.clear(); draw(); side(); }
     else if(k==="/"&&e.shiftKey||e.key==="?"){ showKeys(); }
-    else if(k.startsWith("arrow")&&ED.sel.size){ e.preventDefault(); const s=e.shiftKey?10:1; softCp(); selObjs().filter(o=>!FIX(o)).forEach(o=>{ if(k==="arrowleft") o.x-=s; if(k==="arrowright") o.x+=s; if(k==="arrowup") o.y-=s; if(k==="arrowdown") o.y+=s; }); draw(); } });
+    else if(k.startsWith("arrow")&&ED.sel.size){ e.preventDefault(); const s=e.shiftKey?10:1; softCp(); selObjs().filter(o=>!FIX(o)).forEach(o=>{ const dx=k==="arrowleft"?-s:k==="arrowright"?s:0, dy=k==="arrowup"?-s:k==="arrowdown"?s:0; o.x+=dx; o.y+=dy; if(o.box){ o.box.x+=dx; o.box.y+=dy; } }); draw(); } });
   // วาง: รูปจากคลิปบอร์ดของเครื่อง หรือชิ้นงานที่คัดลอกไว้ในเว็บ
   document.addEventListener("paste",e=>{ if(!ED.doc||$("mdl").classList.contains("on")||/INPUT|TEXTAREA/.test(e.target.tagName)) return;
     ED._pv=false; const files=[...(e.clipboardData&&e.clipboardData.files||[])].filter(f=>/^image\//.test(f.type));
