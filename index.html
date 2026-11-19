@@ -208,6 +208,7 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
 .tb svg{width:16px;height:16px;flex:none}.tb:hover{border-color:var(--sky);color:var(--skyD);background:var(--sky2)}.tb.bad:hover{border-color:#fca5a5;color:var(--bad);background:#fef2f2}
 .fshapes{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:6px}.fshapes button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px;height:34px}.fshapes img{width:100%;height:100%;object-fit:contain}.fshapes button:hover{border-color:var(--sky)}.fshapes button.on{border-color:var(--sky);background:var(--sky2);box-shadow:0 0 0 1px var(--sky)}
 .gridrow{display:flex;align-items:center;gap:6px}.gridrow .unit{flex:1}.gridrow .unit input{width:100%}.gridrow span{color:var(--muted)}
+.nmrow{display:block;margin:0 0 12px}.nmrow span{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--ink,#1d3557);margin-bottom:6px}.nmrow em{font-style:normal;font-weight:400;color:#8aa4bc;font-size:12px}.nmrow input{width:100%;box-sizing:border-box;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit}.nmrow input:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(91,192,248,.2)}
 .combos{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.combos button{aspect-ratio:1;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;padding:0;background:#fff}
 .combos button b{font-size:22px;font-weight:700;line-height:1}.combos button:hover{border-color:var(--sky);box-shadow:var(--sh)}.combos button.on{border-color:var(--sky);box-shadow:0 0 0 2px var(--sky)}
 </style>
@@ -590,6 +591,10 @@ function place(w,h){ const S=safeRect(), t=ED.tpl; let x=S.x+(S.w-w)/2, y=S.y+(S
   return {x:Math.round(x),y:Math.round(y)}; }
 function add(o){ cp(); o.id=uid(); o.rot=o.rot||0; Object.assign(o,place(o.w,o.h)); ED.doc.objects.push(o); ED.sel=new Set([o.id]); draw(); side(); if(ED.tab==="layers") tab("layers"); if(innerWidth<860) openSheet("side"); return o; }
 function base(){ const S=safeRect(); return Math.min(S.w,S.h); }
+// ชื่อจาก layout ของร้าน: ล็อกตำแหน่ง/ขนาดโซน (ลูกค้าแก้ได้แค่ข้อความ ฟอนต์ สี กรอบ)
+const FIX=o=>!!(o&&ED.layoutMode==null&&o.type==="text"&&o.link0!=null);
+const hasFix=()=>!!(ED.doc&&ED.doc.objects.some(FIX));
+function setGroupText(k,v){ softCp(); const T=ED.doc.objects.filter(o=>o.type==="text"&&o.link0===k); T.forEach(o=>{ o.text=v; refit(o); }); regridOf(T); draw(); if(ED.sel.size) side(); }
 function addText(kind){
   const B=base(), size=Math.round(B*(kind==="h"?.22:kind==="s"?.09:.14));
   const o={type:"text",text:kind==="h"?"ชื่อของคุณ":"พิมพ์ข้อความ",font:allFonts()[0]||"Kanit",size,color:[0,85,20,0],stroke:{on:true,w:STD_STROKE(),color:[0,0,0,0]},align:"center",bold:kind==="h",lh:1.15,ls:0};
@@ -653,7 +658,7 @@ function layoutObjs(){ const L=ED.tpl.layout, out=[]; if(!L) return out; const f
   return out; }
 function applyLayout(first){ const L=ED.tpl.layout; if(!L||!(L.slots.length||L.texts.length)) return; if(!first) cp();
   layoutObjs().forEach(o=>{ ED.doc.objects.push(o); if(o.type==="text") fontReady(o); });
-  ED.sel.clear(); ED.hist=[]; draw(); side(); toast("แตะชื่อเพื่อพิมพ์ · แตะช่องการ์ตูนเพื่อใส่รูป · ลากย้ายได้ทุกชิ้น",5000); }
+  ED.sel.clear(); ED.hist=[]; draw(); side(); toast("พิมพ์ชื่อที่แท็บข้อความ · แตะช่องการ์ตูนเพื่อใส่รูป",5000); }
 // ปกหน้าแรก: วาดแบบสำเร็จจริง (ช่องการ์ตูน + ชื่อ + QR) แบบเดียวกับตอนเปิดหน้าแก้
 const _cover=new Map();
 function coverOf(t,px){ const key=t.id+"|"+t._t+"|"+(document.fonts&&document.fonts.status); if(_cover.has(key)) return _cover.get(key);
@@ -808,7 +813,9 @@ function tab(t){
   const lib=c=>CFG.library.filter(l=>l.cat===c);
   const close=`<button class="closeSheet" onclick="closeSheets()">✕</button>`;
   let h="";
-  if(t==="text") h=`<h3>ข้อความ</h3>
+  if(t==="text"&&hasFix()){ const ks=[...new Set(ED.doc.objects.filter(FIX).map(o=>o.link0))];
+    h=`<h3>ชื่อ</h3>${ks.map((k,i)=>{ const o=ED.doc.objects.find(x=>x.type==="text"&&x.link0===k), n=ED.doc.objects.filter(x=>x.type==="text"&&x.link0===k).length; return `<label class="nmrow"><span>${ks.length>1?"ชื่อที่ "+(i+1):"ชื่อบนสติกเกอร์"} <em>${n} ช่อง</em></span><input type="text" value="${esc(o.text)}" oninput="setGroupText('${esc(k)}',this.value)" placeholder="พิมพ์ชื่อ"></label>`; }).join("")}`; }
+  else if(t==="text") h=`<h3>ข้อความ</h3>
     <button class="big" onclick="addText('h')"><span class="ic" style="font-size:20px">Aa</span><span><b style="font-size:20px">หัวข้อใหญ่</b><span>สำหรับชื่อ</span></span></button>
     <button class="big" onclick="addText('m')"><span class="ic">Aa</span><span><b>ข้อความ</b><span>ขนาดกลาง</span></span></button>
     <button class="big" onclick="addText('s')"><span class="ic" style="font-size:12px">Aa</span><span><b style="font-size:13px">ข้อความเล็ก</b><span>เบอร์โทร ห้องเรียน ฯลฯ</span></span></button>`;
@@ -863,11 +870,12 @@ function side(){
   // หัว: ชื่อชนิด + ปุ่มด่วน (ทำสำเนา / ลบ)
   const B_=(t,ic,fn,cls)=>`<button class="tb${cls?" "+cls:""}" title="${t}" onclick="${fn}">${svg(ic)}<span>${t}</span></button>`;
   let h=close+`<div class="phd"><b>${typ}</b>${one?`<span class="chip">${mmOf(o.w)} × ${mmOf(o.h)} มม.</span>`:""}</div>
-    <div class="tbar">${!one?(grouped?B_("แยกกลุ่ม",'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',"ungroup()"):B_("รวมกลุ่ม",'<rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="3 3"/><rect x="7" y="7" width="5" height="5" rx="1"/><rect x="12" y="12" width="5" height="5" rx="1"/>',"group()")):""}${B_("ทำสำเนา",'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>',"dup()")}${B_("ลบ",'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/>',"del()","bad")}</div>`;
+    <div class="tbar">${!one?(grouped?B_("แยกกลุ่ม",'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',"ungroup()"):B_("รวมกลุ่ม",'<rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="3 3"/><rect x="7" y="7" width="5" height="5" rx="1"/><rect x="12" y="12" width="5" height="5" rx="1"/>',"group()")):""}${sel.some(FIX)?"":B_("ทำสำเนา",'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>',"dup()")}${sel.some(FIX)?"":B_("ลบ",'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/>',"del()","bad")}</div>`;
   if(ED.layoutMode!=null){ const tt=sel.filter(o=>o.type==="text"); if(tt.length){ const B=tt[0].box||aabb(tt[0]);
     h+=sec("กรอบชื่อสูงสุด (มม.)",`<div class="gridrow"><label class="unit"><input type="number" step="0.5" min="2" value="${mmOf(B.w)}" onchange="setMaxBox('w',this.value)"><em>กว้าง</em></label><span>×</span><label class="unit"><input type="number" step="0.5" min="2" value="${mmOf(B.h)}" onchange="setMaxBox('h',this.value)"><em>สูง</em></label></div>`); } }
-  if(!one) h+=sec("ขนาดรวม",dimsHTML(sel));
-  if(!one){ const g=gridOf(sel); h+=sec("จัดเรียง",`<div class="gridrow"><label class="unit"><input type="number" min="1" max="30" id="gR" value="${g.r}"><em>แถว</em></label><span>×</span><label class="unit"><input type="number" min="1" max="20" id="gC" value="${g.c}"><em>คอลัมน์</em></label></div>
+  const fx=sel.some(FIX);
+  if(!one&&!fx) h+=sec("ขนาดรวม",dimsHTML(sel));
+  if(!one&&!fx){ const g=gridOf(sel); h+=sec("จัดเรียง",`<div class="gridrow"><label class="unit"><input type="number" min="1" max="30" id="gR" value="${g.r}"><em>แถว</em></label><span>×</span><label class="unit"><input type="number" min="1" max="20" id="gC" value="${g.c}"><em>คอลัมน์</em></label></div>
     <button class="btn pri wide" style="margin-top:8px" onclick="gridify(+$('gR').value,+$('gC').value)">จัดเท่ากัน</button>
     <div class="small muted" style="margin-top:6px">เปลี่ยนจำนวนแถว/คอลัมน์ = เพิ่มหรือลดช่องได้ (ปัจจุบัน ${sel.length} ชิ้น)</div>`); }
   if(isT){
@@ -875,7 +883,7 @@ function side(){
     if(one&&ln<=1&&sib>1) h+=`<div class="linkchip off"><span>แก้เฉพาะช่องนี้</span><button onclick="linkText()">แก้พร้อมกัน ${sib} ช่อง</button></div>`;
     if(ln>1&&one) h+=`<div class="linkchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 00-5.66 0l-3 3a4 4 0 005.66 5.66l1-1"/></svg>แก้พร้อมกัน ${ln} ช่อง<button onclick="unlinkText()">แก้ทีละช่อง</button></div>`;
     h+=sec("",`<textarea id="txtIn" rows="2" placeholder="พิมพ์ข้อความที่นี่" oninput="setText(this.value)">${esc(T0.text)}</textarea>`);
-    h+=sec(one?"ขนาด":"ขนาดตัวอักษร",(one?dimsHTML(T0):"")+`<div class="rng"><input type="range" min="8" max="${Math.round(base()*.6)}" value="${Math.round(T0.size)}" oninput="setSize(+this.value,this)" onchange="side()">${numBox(mmOf(T0.size),"มม.",ED.tpl.res/25.4)}</div>`);
+    if(!fx) h+=sec(one?"ขนาด":"ขนาดตัวอักษร",(one?dimsHTML(T0):"")+`<div class="rng"><input type="range" min="8" max="${Math.round(base()*.6)}" value="${Math.round(T0.size)}" oninput="setSize(+this.value,this)" onchange="side()">${numBox(mmOf(T0.size),"มม.",ED.tpl.res/25.4)}</div>`);
     const fonts=allFonts();
     h+=sec("ฟอนต์",`<button class="fontpick" onclick="ED.fontOpen=!ED.fontOpen;side()" style="font-family:'${esc(T0.font)}'"><span>${esc(T0.font)}</span><i>${ED.fontOpen?"▴":"▾"}</i></button>
       ${ED.fontOpen?`<div class="fontgrid">${fonts.map(f=>`<button class="${f===T0.font?"on":""}" style="font-family:'${esc(f)}'" onclick="ED.fontOpen=false;setP('font','${esc(f)}')"><b>กขค Aa</b><span>${esc(f)}</span></button>`).join("")}</div>`:""}`);
@@ -983,13 +991,13 @@ function setRot(v,el){ softCp(); selObjs().forEach(o=>o.rot=v); if(el) outv(el,v
 function unlinkText(){ const o=selObjs()[0]; if(!o) return; cp(); linked(o).forEach(x=>x.link=null); side(); toast("แยกแล้ว · แก้ทีละช่อง"); }
 function linkText(){ const o=selObjs()[0]; if(!o||!o.link0) return; cp(); const g=ED.doc.objects.filter(x=>x.type==="text"&&x.link0===o.link0); g.forEach(x=>x.link=o.link0); side(); toast("เชื่อม "+g.length+" ช่อง · แก้ช่องเดียว เปลี่ยนทุกช่อง"); }
 function pickReplace(id){ const i=document.createElement("input"); i.type="file"; i.accept="image/*"; i.onchange=()=>uploadFiles([...i.files],"image",id); i.click(); }
-function copySel(){ ED.clip=JSON.parse(JSON.stringify(selObjs())); ED.clipN=0; try{ navigator.clipboard&&navigator.clipboard.writeText&&navigator.clipboard.writeText("").catch(()=>{}); }catch(e){} }
+function copySel(){ ED.clip=JSON.parse(JSON.stringify(selObjs().filter(o=>!FIX(o)))); ED.clipN=0; try{ navigator.clipboard&&navigator.clipboard.writeText&&navigator.clipboard.writeText("").catch(()=>{}); }catch(e){} }
 function pasteClip(){ if(!ED.clip||!ED.clip.length) return; cp(); ED.clipN=(ED.clipN||0)+1; const ids=[], off=30*ED.clipN; const gm={}; ED.clip.forEach(o=>{ const c=JSON.parse(JSON.stringify(o)); c.id=uid(); delete c.gid; delete c.cell; delete c.cellFree; if(c.grp) c.grp=gm[c.grp]||(gm[c.grp]="g"+uid()); delete c.box; delete c.gid; delete c.cell; delete c.cellFree; c.x+=off; c.y+=off; ED.doc.objects.push(c); ids.push(c.id); }); ED.sel=new Set(ids); draw(); side(); toast("วาง "+ids.length+" ชิ้น"); }
 function group(){ const sel=selObjs(); if(sel.length<2) return; cp(); const g="g"+uid(); sel.forEach(o=>o.grp=g); side(); draw(); toast("รวมกลุ่ม "+sel.length+" ชิ้น"); }
 function ungroup(){ const sel=selObjs(); if(!sel.some(o=>o.grp)) return; cp(); sel.forEach(o=>delete o.grp); side(); draw(); toast("แยกกลุ่มแล้ว"); }
 const withGroups=ids=>{ const g=new Set(ED.doc.objects.filter(o=>ids.has(o.id)&&o.grp).map(o=>o.grp)); ED.doc.objects.forEach(o=>{ if(o.grp&&g.has(o.grp)) ids.add(o.id); }); return ids; };
-function dup(){ const s=selObjs(); if(!s.length) return; cp(); const ids=[], gm={}; s.forEach(o=>{ const c=JSON.parse(JSON.stringify(o)); c.id=uid(); if(c.grp) c.grp=gm[c.grp]||(gm[c.grp]="g"+uid()); delete c.box; c.x+=30; c.y+=30; ED.doc.objects.push(c); ids.push(c.id); }); ED.sel=new Set(ids); draw(); side(); }
-function del(){ if(!ED.sel.size) return; cp(); ED.doc.objects=ED.doc.objects.filter(o=>!ED.sel.has(o.id)); ED.sel.clear(); draw(); side(); if(ED.tab==="layers") tab("layers"); }
+function dup(){ const s=selObjs().filter(o=>!FIX(o)); if(!s.length) return; cp(); const ids=[], gm={}; s.forEach(o=>{ const c=JSON.parse(JSON.stringify(o)); c.id=uid(); if(c.grp) c.grp=gm[c.grp]||(gm[c.grp]="g"+uid()); delete c.box; c.x+=30; c.y+=30; ED.doc.objects.push(c); ids.push(c.id); }); ED.sel=new Set(ids); draw(); side(); }
+function del(){ if(!ED.sel.size) return; if(selObjs().every(FIX)){ toast("ช่องชื่อของแบบนี้ลบไม่ได้"); return; } cp(); ED.doc.objects=ED.doc.objects.filter(o=>!ED.sel.has(o.id)||FIX(o)); ED.sel.clear(); draw(); side(); if(ED.tab==="layers") tab("layers"); }
 function fwd(d){ cp(); const A=ED.doc.objects, s=A.filter(o=>ED.sel.has(o.id)), r=A.filter(o=>!ED.sel.has(o.id)); ED.doc.objects=d>0?r.concat(s):s.concat(r); draw(); }
 function align(k){ const sel=selObjs(); if(!sel.length) return; cp();
   const R=sel.length===1?safeRect():bounds(sel);
@@ -1089,7 +1097,7 @@ function drawGuides(x,T,z){
     if(q.w>q.h*2){ x.font=`600 ${Math.min(q.h*.28,s*.4)}px Kanit,sans-serif`; x.textBaseline="middle"; x.fillText("พื้นที่ QR ของร้าน",q.x+q.w/2+s*.15,q.y+q.h/2); } }
   x.setLineDash([]); }
 function drawQrIcon(x,X,Y,s){ const u=s/7; x.save(); x.globalAlpha=.85; for(const [a,b] of [[0,0],[4,0],[0,4]]){ x.fillRect(X+a*u,Y+b*u,3*u,3*u); x.clearRect(X+(a+.6)*u,Y+(b+.6)*u,1.8*u,1.8*u); x.fillRect(X+(a+1)*u,Y+(b+1)*u,u,u); } x.fillRect(X+4*u,Y+4*u,u,u); x.fillRect(X+6*u,Y+5*u,u,2*u); x.fillRect(X+5*u,Y+6*u,u,u); x.restore(); }
-function handles(){ const s=selObjs(), z=ED.z; if(s.length!==1) return []; const o=s[0], r=(o.rot||0)*Math.PI/180, c=Math.cos(r), sn=Math.sin(r), cx=o.x+o.w/2, cy=o.y+o.h/2;
+function handles(){ const s=selObjs(), z=ED.z; if(s.length!==1||FIX(s[0])) return []; const o=s[0], r=(o.rot||0)*Math.PI/180, c=Math.cos(r), sn=Math.sin(r), cx=o.x+o.w/2, cy=o.y+o.h/2;
   const P=(lx,ly)=>({x:cx+lx*c-ly*sn,y:cy+lx*sn+ly*c}); const out=[];
   const pts=o.type==="text"?[[-1,-1],[1,-1],[1,1],[-1,1]]:[[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0]];
   for(const [sx,sy] of pts) out.push(Object.assign(P(sx*o.w/2,sy*o.h/2),{k:"rs",sx,sy}));
@@ -1116,7 +1124,7 @@ function initEvents(){
     const h=handles().find(h=>Math.hypot(h.x-p.x,h.y-p.y)<(e.pointerType==="touch"?22:11)/z), sel=selObjs();
     if(h) ED.drag={mode:h.k,h,p0:p,snap:JSON.parse(JSON.stringify(sel)),moved:false};
     else { const o=e.target===cv?hit(p):null;
-      if(o){ if(e.shiftKey){ const g=withGroups(new Set([o.id])); if(ED.sel.has(o.id)) g.forEach(i=>ED.sel.delete(i)); else g.forEach(i=>ED.sel.add(i)); } else if(!ED.sel.has(o.id)) ED.sel=withGroups(new Set([o.id])); const s2=selObjs(); ED.drag={mode:"move",p0:p,snap:JSON.parse(JSON.stringify(s2)),B:bounds(s2),moved:false}; }
+      if(o){ if(e.shiftKey){ const g=withGroups(new Set([o.id])); if(ED.sel.has(o.id)) g.forEach(i=>ED.sel.delete(i)); else g.forEach(i=>ED.sel.add(i)); } else if(!ED.sel.has(o.id)) ED.sel=withGroups(new Set([o.id])); const s2=selObjs(); ED.drag=s2.some(FIX)?null:{mode:"move",p0:p,snap:JSON.parse(JSON.stringify(s2)),B:bounds(s2),moved:false}; }
       else { ED.sel.clear(); ED.drag=e.pointerType==="touch"?null:{mode:"marq",x0:p.x,y0:p.y,x1:p.x,y1:p.y}; } }
     st.setPointerCapture(e.pointerId); draw(); side(); if(innerWidth<860){ if(ED.sel.size){ closeSheets(); $("side").classList.add("open"); } } });
   st.addEventListener("pointermove",e=>{ if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -1165,7 +1173,7 @@ function initEvents(){
     else if(k==="delete"||k==="backspace"){ e.preventDefault(); del(); }
     else if(k==="escape"){ if(ED.dropper){ ED.dropper=null; $("stage").classList.remove("picking"); side(); return; } ED.sel.clear(); draw(); side(); }
     else if(k==="/"&&e.shiftKey||e.key==="?"){ showKeys(); }
-    else if(k.startsWith("arrow")&&ED.sel.size){ e.preventDefault(); const s=e.shiftKey?10:1; softCp(); selObjs().forEach(o=>{ if(k==="arrowleft") o.x-=s; if(k==="arrowright") o.x+=s; if(k==="arrowup") o.y-=s; if(k==="arrowdown") o.y+=s; }); draw(); } });
+    else if(k.startsWith("arrow")&&ED.sel.size){ e.preventDefault(); const s=e.shiftKey?10:1; softCp(); selObjs().filter(o=>!FIX(o)).forEach(o=>{ if(k==="arrowleft") o.x-=s; if(k==="arrowright") o.x+=s; if(k==="arrowup") o.y-=s; if(k==="arrowdown") o.y+=s; }); draw(); } });
   // วาง: รูปจากคลิปบอร์ดของเครื่อง หรือชิ้นงานที่คัดลอกไว้ในเว็บ
   document.addEventListener("paste",e=>{ if(!ED.doc||$("mdl").classList.contains("on")||/INPUT|TEXTAREA/.test(e.target.tagName)) return;
     ED._pv=false; const files=[...(e.clipboardData&&e.clipboardData.files||[])].filter(f=>/^image\//.test(f.type));
