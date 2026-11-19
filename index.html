@@ -649,7 +649,7 @@ function textCells(L){ if(L.fixed) return L.texts.map(b=>({x:b.x,y:b.y,w:b.w,h:b
 function layoutObjs(){ const L=ED.tpl.layout, out=[]; if(!L) return out; const font=allFonts()[0]||"Kanit", links=[...new Set(L.texts.map(t=>t.link))];
   L.slots.forEach(b=>out.push({type:"slot",id:uid(),rot:0,x:b.x,y:b.y,w:b.w,h:b.h}));
   const cells=textCells(L); L.texts.forEach((b,bi)=>{ const i=links.indexOf(b.link); const o={type:"text",id:uid(),rot:0,text:i?"ชื่อที่ "+(i+1):"ชื่อของคุณ",font,size:100,color:[0,75,25,0],stroke:{on:true,w:STD_STROKE(),color:[0,0,0,0]},align:"center",bold:true,lh:1.15,ls:0,link:null,link0:b.link,box:cells[bi]}; o._k=b.link+"|"+Math.round(Math.log(Math.max(1,Math.min(b.w,b.h)))/Math.log(1.18)); fitBox(o); out.push(o); });
-  const tx=out.filter(o=>o.type==="text"); if(!L.fixed&&tx.length&&(cells.grid||cells.free)){ const gm=new Map(); tx.forEach(o=>{ const k=cells.grid?"all":o._k; if(!gm.has(k)) gm.set(k,uid()); o.cell=Object.assign({},o.box); o.gid=gm.get(k); if(!cells.grid) o.cellFree=true; }); [...gm.values()].forEach(g=>regrid(tx.filter(o=>o.gid===g))); } tx.forEach(o=>delete o._k);
+  const tx=out.filter(o=>o.type==="text"); if(!L.fixed&&ED.layoutMode==null&&tx.length&&(cells.grid||cells.free)){ const gm=new Map(); tx.forEach(o=>{ const k=cells.grid?"all":o._k; if(!gm.has(k)) gm.set(k,uid()); o.cell=Object.assign({},o.box); o.gid=gm.get(k); if(!cells.grid) o.cellFree=true; }); [...gm.values()].forEach(g=>regrid(tx.filter(o=>o.gid===g))); } tx.forEach(o=>delete o._k);
   return out; }
 function applyLayout(first){ const L=ED.tpl.layout; if(!L||!(L.slots.length||L.texts.length)) return; if(!first) cp();
   layoutObjs().forEach(o=>{ ED.doc.objects.push(o); if(o.type==="text") fontReady(o); });
