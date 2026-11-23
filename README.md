@@ -10,3 +10,8 @@
 1. Settings → Pages → Deploy from a branch → `main` / root
 2. สร้าง Fine-grained token: เลือกเฉพาะ repo นี้ · Permissions → Contents: Read and write
 3. หน้าตั้งค่าเว็บ → เผยแพร่ → ⚙ ใส่ token → กด **อัปเดตเว็บออนไลน์** (เว็บเปลี่ยนใน ~1 นาที)
+
+## ไฟล์ในโปรเจกต์
+- `index.html` — เว็บทั้งหมด (โค้ด + แบบงาน + ฟอนต์ที่ย่อแล้ว)
+- `swop.icc` — โปรไฟล์สี CMYK (โหลดเฉพาะตอนลูกค้ากดดาวน์โหลดไฟล์)
+- `tools/optimize_fonts.py` + `.github/workflows/optimize.yml` — ย่อฟอนต์ที่ฝังในเว็บอัตโนมัติ (เหลือเฉพาะอักษรไทย/อังกฤษ) ทุกครั้งที่อัปเดตเว็บ

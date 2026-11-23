@@ -1,0 +1,24 @@
+name: ลดขนาดฟอนต์อัตโนมัติ
+on:
+  push:
+    branches: [main]
+    paths: [index.html]
+permissions:
+  contents: write
+jobs:
+  optimize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -q fonttools
+      - run: python tools/optimize_fonts.py index.html
+      - name: commit
+        run: |
+          if git diff --quiet; then echo "no change"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "ลดขนาดฟอนต์อัตโนมัติ"
+          git push
