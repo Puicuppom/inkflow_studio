@@ -160,6 +160,7 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
 .qa button:hover{color:var(--skyD);border-color:var(--sky)}.qa button.bad:hover{color:var(--bad);border-color:#fca5a5}
 #txtIn{font-size:17px;border-radius:12px;padding:10px 12px;resize:vertical;min-height:58px}
 .fontpick{width:100%;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#fff;border-radius:10px;height:42px;padding:0 12px;font-size:17px}.fontpick:hover{border-color:var(--sky)}.fontpick i{font-style:normal;color:var(--muted);font-family:Kanit,sans-serif;font-size:12px}
+.flangs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.flangs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;color:#46607a;cursor:pointer}.flangs button.on{background:var(--sky,#5bc0f8);border-color:transparent;color:#fff}
 .fontgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;max-height:260px;overflow:auto;padding:2px}
 .fontgrid button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px 6px;text-align:center}.fontgrid button b{display:block;font-size:19px;font-weight:400;line-height:1.2}
 .fontgrid button span{display:block;font-size:11px;color:var(--muted);font-family:Kanit,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -331,6 +332,24 @@ const KV={ db:null, open(){ return this.db||(this.db=new Promise((res,rej)=>{ tr
   async set(k,v){ try{ const db=await this.open(); await new Promise((res,rej)=>{ const t=db.transaction("kv","readwrite"); t.objectStore("kv").put(v,k); t.oncomplete=res; t.onerror=()=>rej(t.error); }); return true; }catch(e){ return false; } } };
 let _cfgT=null;
 function saveCfg(){ if(!ADMIN) return; CFG._t=Date.now(); clearTimeout(_cfgT); _cfgT=setTimeout(async()=>{ if(!(await KV.set("cfg",JSON.parse(JSON.stringify(CFG))))) toast("บันทึกการตั้งค่าไม่ได้ — สำรองเป็นไฟล์ไว้ก่อน",6000); },250); admSize(); }
+// ฟอนต์ภาษาอื่น (Google Fonts) โหลดเฉพาะตอนใช้ · CJK แบ่งชิ้นตามตัวอักษร โหลดแค่ตัวที่พิมพ์
+const FONT_LANGS=[
+  {k:"th",t:"ไทย",s:"กขค Aa"},
+  {k:"en",t:"อังกฤษ · เวียดนาม · มาเลย์",s:"Aa Ăơ",f:["Be Vietnam Pro","Nunito","Baloo 2","Quicksand","Lexend","Pacifico"]},
+  {k:"ja",t:"ญี่ปุ่น",s:"あア字",f:["Noto Sans JP","M PLUS Rounded 1c","Zen Maru Gothic","Kosugi Maru","Kiwi Maru","Yusei Magic"]},
+  {k:"ko",t:"เกาหลี",s:"가나다",f:["Noto Sans KR","Jua","Gaegu","Do Hyeon","Gamja Flower","Black Han Sans"]},
+  {k:"zh",t:"จีนตัวย่อ",s:"中文字",f:["Noto Sans SC","ZCOOL KuaiLe","ZCOOL XiaoWei","Ma Shan Zheng"]},
+  {k:"zht",t:"จีนตัวเต็ม",s:"中文字",f:["Noto Sans TC","LXGW WenKai TC"]},
+  {k:"lo",t:"ลาว",s:"ກຂຄ",f:["Noto Sans Lao","Noto Sans Lao Looped","Phetsarath"]},
+  {k:"km",t:"เขมร",s:"កខគ",f:["Noto Sans Khmer","Kantumruy Pro","Battambang","Moul"]},
+  {k:"my",t:"พม่า",s:"ကခဂ",f:["Noto Sans Myanmar","Padauk"]}];
+const FONT_LANG=new Map(); FONT_LANGS.forEach(L=>(L.f||[]).forEach(f=>FONT_LANG.set(f,L)));
+const _fcss=new Map();
+function ensureFontCss(name){ if(!FONT_LANG.has(name)) return Promise.resolve(); if(_fcss.has(name)) return _fcss.get(name);
+  const p=new Promise(res=>{ const l=document.createElement("link"); l.rel="stylesheet"; l.href="https://fonts.googleapis.com/css2?family="+encodeURIComponent(name).replace(/%20/g,"+")+"&display=swap"; l.onload=l.onerror=()=>res(); document.head.appendChild(l); setTimeout(res,8000); });
+  _fcss.set(name,p); return p; }
+async function loadFontFor(o){ try{ await ensureFontCss(o.font); if(document.fonts&&document.fonts.load) await document.fonts.load(fontStr(o),o.text||"ก"); }catch(e){} }
+const fontLangOf=f=>(FONT_LANG.get(f)||FONT_LANGS[0]).k;
 const FONTS_STD=["Kanit","Prompt","Mitr","Sarabun","Itim","Sriracha","Pattaya","Chonburi","Mali","Charm","Athiti","Chakra Petch","Bai Jamjuree","Niramit","Krub","Fahkwang","Srisakdi","Thasadith"];
 // ชื่อฟอนต์จริงจากตาราง name ในไฟล์ (แบบเดียวกับที่ Photoshop แสดง) — nameID 16 (Typographic Family) หรือ 1 (Family)
 function fontFamilyName(buf){ try{ const v=new DataView(buf); let tag=v.getUint32(0); if(tag===0x774F4646||tag===0x774F4632) return null; // woff/woff2: ใช้ชื่อไฟล์
@@ -776,7 +795,7 @@ function addSlot(){ const s=Math.round(base()*.28); add({type:"slot",w:s,h:s}); 
 function addShape(kind){ const S=SHAPES[kind], B=base(); let w=Math.round(B*.6), h=Math.round(w*(S.ar||.5)); if(h>safeRect().h*.7){ h=Math.round(safeRect().h*.7); w=Math.round(h/(S.ar||.5)); }
   add({type:"shape",shape:kind,w,h,fill:S.outline?null:[0,25,5,0],stroke:{on:!!S.outline||true,w:STD_STROKE(),color:[0,85,20,0]},p:Object.assign({},S.p||{}),opacity:1}); }
 
-function fontReady(o){ if(!document.fonts||!document.fonts.load) return; document.fonts.load(fontStr(o),o.text||"ก").then(()=>{ if(ED.doc&&ED.doc.objects.includes(o)){ refit(o); draw(); } }).catch(()=>{}); }
+function fontReady(o){ if(!document.fonts||!document.fonts.load) return; loadFontFor(o).then(()=>{ if(ED.doc&&ED.doc.objects.includes(o)){ refit(o); draw(); } }).catch(()=>{}); }
 // ---------- ข้อความ: วัดขนาด
 const mctx=document.createElement("canvas").getContext("2d");
 const fontStr=o=>`${o.italic?"italic ":""}${o.bold?"700":"400"} ${o.size}px "${o.font}", Kanit, sans-serif`;
@@ -960,9 +979,9 @@ function side(){
     if(ln>1&&one) h+=`<div class="linkchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 00-5.66 0l-3 3a4 4 0 005.66 5.66l1-1"/></svg>แก้พร้อมกัน ${ln} ช่อง<button onclick="unlinkText()">แก้ทีละช่อง</button></div>`;
     h+=sec("",`<textarea id="txtIn" rows="2" placeholder="พิมพ์ข้อความที่นี่" oninput="setText(this.value)">${esc(T0.text)}</textarea>`);
     if(!fx) h+=sec(one?"ขนาด":"ขนาดตัวอักษร",(one?dimsHTML(T0):"")+`<div class="rng"><input type="range" min="8" max="${Math.round(base()*.6)}" value="${Math.round(T0.size)}" oninput="setSize(+this.value,this)" onchange="side()">${numBox(mmOf(T0.size),"มม.",ED.tpl.res/25.4)}</div>`);
-    const fonts=allFonts();
-    h+=sec("ฟอนต์",`<button class="fontpick" onclick="ED.fontOpen=!ED.fontOpen;side()" style="font-family:'${esc(T0.font)}'"><span>${esc(T0.font)}</span><i>${ED.fontOpen?"▴":"▾"}</i></button>
-      ${ED.fontOpen?`<div class="fontgrid">${fonts.map(f=>`<button class="${f===T0.font?"on":""}" style="font-family:'${esc(f)}'" onclick="ED.fontOpen=false;setP('font','${esc(f)}')"><b>กขค Aa</b><span>${esc(f)}</span></button>`).join("")}</div>`:""}`);
+    const FL=FONT_LANGS.find(L=>L.k===(ED.fontLang||fontLangOf(T0.font)))||FONT_LANGS[0], fonts=FL.k==="th"?allFonts():FL.f; if(ED.fontOpen&&FL.f) FL.f.forEach(ensureFontCss);
+    h+=sec("ฟอนต์",`<button class="fontpick" onclick="ED.fontOpen=!ED.fontOpen;ED.fontLang=null;side()" style="font-family:'${esc(T0.font)}'"><span>${esc(T0.font)}</span><i>${ED.fontOpen?"▴":"▾"}</i></button>
+      ${ED.fontOpen?`<div class="flangs">${FONT_LANGS.map(L=>`<button class="${L.k===FL.k?"on":""}" onclick="ED.fontLang='${L.k}';side()">${L.t}</button>`).join("")}</div><div class="fontgrid">${fonts.map(f=>`<button class="${f===T0.font?"on":""}" style="font-family:'${esc(f)}'" onclick="ED.fontOpen=false;setP('font','${esc(f)}')"><b>${FL.s}</b><span>${esc(f)}</span></button>`).join("")}</div>${FL.k!=="th"&&FL.k!=="en"?`<p class="small muted" style="margin:6px 0 0">ฟอนต์${FL.t}ไม่มีอักษรไทย · ถ้าพิมพ์ไทยปน ส่วนที่เป็นไทยจะใช้ฟอนต์ Kanit</p>`:""}`:""}`);
     h+=sec("คู่สีแนะนำ",`<div class="combos">${COMBOS.map((c,i)=>`<button title="${c[2]}" class="${sameC(T0.color,c[0])&&T0.stroke.on&&sameC(T0.stroke.color,c[1])?"on":""}" onclick="applyCombo(${i})" style="background:${disp(c[3]||[0,0,0,0])}"><b style="color:${disp(c[0])};-webkit-text-stroke:3px ${disp(c[1])};paint-order:stroke fill;font-family:'${esc(T0.font)}'">ก</b></button>`).join("")}</div>`);
     h+=`<button class="more" onclick="ED.moreCol=!ED.moreCol;side()">ปรับสีเอง / เส้นขอบ<i>${ED.moreCol?"▴":"▾"}</i></button>`;
     if(ED.moreCol){ h+=sec("สีตัวอักษร",palHTML("color",T0.color));
@@ -1379,7 +1398,7 @@ async function download(){
     [["กลับไปแก้",false],["ดาวน์โหลด",()=>{ const s=$("oCode").value.trim(); if(!s){ $("oCode").focus(); $("oCode").style.borderColor="var(--bad)"; return undefined; } return s; },"pri"]]);
   if(!v) return; try{ localStorage.setItem("ctwCode",v); }catch(e){}
   busy("กำลังสร้างไฟล์งานพิมพ์ CMYK ความละเอียดเต็ม…"); await new Promise(r=>setTimeout(r,30));
-  try{ await document.fonts.ready; await needIcc(); const T=ED.tpl, base=(prodCode()+"-"+v).replace(/[\\/:*?"<>|]+/g,"_"), b=T.qrRec?await cmykPsdOut(await renderSeps(),T.res||300,T.qrRec,base):await cmykTif(await renderSeps(),T.res||300);
+  try{ await Promise.all(ED.doc.objects.filter(o=>o.type==="text").map(loadFontFor)); await document.fonts.ready; await needIcc(); const T=ED.tpl, base=(prodCode()+"-"+v).replace(/[\\/:*?"<>|]+/g,"_"), b=T.qrRec?await cmykPsdOut(await renderSeps(),T.res||300,T.qrRec,base):await cmykTif(await renderSeps(),T.res||300);
     const name=base+(T.qrRec?".psd":".tif"); dl(name,b); autosave(); unbusy();
     modal(`<h2>ดาวน์โหลดแล้ว ✓</h2><p>ไฟล์ <b>${esc(name)}</b> <span class="chip">${ED.tpl.qrRec?"PSD":"TIF"} · CMYK · ${ED.tpl.res||300} DPI</span></p><p>ส่งไฟล์นี้ให้ร้าน${CFG.shop.contact?` ทาง <b>${esc(CFG.shop.contact)}</b>`:""} เพื่อสั่งพิมพ์ได้เลย</p><p class="small muted">ส่งเป็น “ไฟล์” (ไม่ใช่รูปภาพ) เพื่อให้ได้ความละเอียดเต็ม · งานนี้ถูกเก็บไว้ในเครื่อง กลับมาแก้ต่อได้</p>`);
   }catch(e){ unbusy(); modal(`<h2>สร้างไฟล์ไม่ได้</h2><p>${esc(e.message||e)}</p>`); }
