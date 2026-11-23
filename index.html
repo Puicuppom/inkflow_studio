@@ -160,7 +160,14 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
 .qa button:hover{color:var(--skyD);border-color:var(--sky)}.qa button.bad:hover{color:var(--bad);border-color:#fca5a5}
 #txtIn{font-size:17px;border-radius:12px;padding:10px 12px;resize:vertical;min-height:58px}
 .fontpick{width:100%;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#fff;border-radius:10px;height:42px;padding:0 12px;font-size:17px}.fontpick:hover{border-color:var(--sky)}.fontpick i{font-style:normal;color:var(--muted);font-family:Kanit,sans-serif;font-size:12px}
-.flangs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.flangs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;color:#46607a;cursor:pointer}.flangs button.on{background:var(--sky,#5bc0f8);border-color:transparent;color:#fff}
+.flangs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;padding:6px;background:linear-gradient(135deg,#f2f9ff,#fff5fa);border:1px solid var(--line);border-radius:14px}
+.flangs button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:58px;border:1px solid transparent;background:#fff;border-radius:11px;padding:6px 2px;font:inherit;cursor:pointer;color:#46607a;box-shadow:0 1px 2px rgba(27,42,61,.06);transition:transform .14s,box-shadow .14s,border-color .14s}
+.flangs button i{font-style:normal;font-size:21px;line-height:1.05;font-weight:600;background:linear-gradient(135deg,#2b9fe6,#ec4f95);-webkit-background-clip:text;background-clip:text;color:transparent}
+.flangs button b{font-size:12px;font-weight:600;color:#33506b;line-height:1.2}.flangs button small{font-size:10px;color:#8aa4bc;line-height:1.1}
+@media (hover:hover){.flangs button:hover{border-color:#bfe3fb;transform:translateY(-1px);box-shadow:0 4px 10px rgba(43,159,230,.12)}}
+.flangs button:active{transform:scale(.97)}
+.flangs button.on{background:linear-gradient(135deg,#5bc0f8,#f27bb3);box-shadow:0 4px 12px rgba(236,79,149,.25)}.flangs button.on i,.flangs button.on b,.flangs button.on small{color:#fff;-webkit-text-fill-color:#fff}
+.fnote{margin:8px 2px 0;font-size:11.5px;color:#8aa4bc;line-height:1.45}
 .fontgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;max-height:260px;overflow:auto;padding:2px}
 .fontgrid button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px 6px;text-align:center}.fontgrid button b{display:block;font-size:19px;font-weight:400;line-height:1.2}
 .fontgrid button span{display:block;font-size:11px;color:var(--muted);font-family:Kanit,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -334,15 +341,15 @@ let _cfgT=null;
 function saveCfg(){ if(!ADMIN) return; CFG._t=Date.now(); clearTimeout(_cfgT); _cfgT=setTimeout(async()=>{ if(!(await KV.set("cfg",JSON.parse(JSON.stringify(CFG))))) toast("บันทึกการตั้งค่าไม่ได้ — สำรองเป็นไฟล์ไว้ก่อน",6000); },250); admSize(); }
 // ฟอนต์ภาษาอื่น (Google Fonts) โหลดเฉพาะตอนใช้ · CJK แบ่งชิ้นตามตัวอักษร โหลดแค่ตัวที่พิมพ์
 const FONT_LANGS=[
-  {k:"th",t:"ไทย",s:"กขค Aa"},
-  {k:"en",t:"อังกฤษ · เวียดนาม · มาเลย์",s:"Aa Ăơ",f:["Be Vietnam Pro","Nunito","Baloo 2","Quicksand","Lexend","Pacifico"]},
-  {k:"ja",t:"ญี่ปุ่น",s:"あア字",f:["Noto Sans JP","M PLUS Rounded 1c","Zen Maru Gothic","Kosugi Maru","Kiwi Maru","Yusei Magic"]},
-  {k:"ko",t:"เกาหลี",s:"가나다",f:["Noto Sans KR","Jua","Gaegu","Do Hyeon","Gamja Flower","Black Han Sans"]},
-  {k:"zh",t:"จีนตัวย่อ",s:"中文字",f:["Noto Sans SC","ZCOOL KuaiLe","ZCOOL XiaoWei","Ma Shan Zheng"]},
-  {k:"zht",t:"จีนตัวเต็ม",s:"中文字",f:["Noto Sans TC","LXGW WenKai TC"]},
-  {k:"lo",t:"ลาว",s:"ກຂຄ",f:["Noto Sans Lao","Noto Sans Lao Looped","Phetsarath"]},
-  {k:"km",t:"เขมร",s:"កខគ",f:["Noto Sans Khmer","Kantumruy Pro","Battambang","Moul"]},
-  {k:"my",t:"พม่า",s:"ကခဂ",f:["Noto Sans Myanmar","Padauk"]}];
+  {k:"th",t:"ไทย",g:"ก",s:"กขค Aa"},
+  {k:"en",t:"อังกฤษ",sub:"เวียดนาม ฯลฯ",g:"Aa",s:"Aa Ăơ",f:["Be Vietnam Pro","Nunito","Baloo 2","Quicksand","Lexend","Pacifico"]},
+  {k:"ja",t:"ญี่ปุ่น",g:"あ",s:"あア字",f:["Noto Sans JP","M PLUS Rounded 1c","Zen Maru Gothic","Kosugi Maru","Kiwi Maru","Yusei Magic"]},
+  {k:"ko",t:"เกาหลี",g:"가",s:"가나다",f:["Noto Sans KR","Jua","Gaegu","Do Hyeon","Gamja Flower","Black Han Sans"]},
+  {k:"zh",t:"จีน",sub:"ตัวย่อ",g:"中",s:"中文字",f:["Noto Sans SC","ZCOOL KuaiLe","ZCOOL XiaoWei","Ma Shan Zheng"]},
+  {k:"zht",t:"จีน",sub:"ตัวเต็ม",g:"繁",s:"繁體字",f:["Noto Sans TC","LXGW WenKai TC"]},
+  {k:"lo",t:"ลาว",g:"ກ",s:"ກຂຄ",f:["Noto Sans Lao","Noto Sans Lao Looped","Phetsarath"]},
+  {k:"km",t:"เขมร",g:"ក",s:"កខគ",f:["Noto Sans Khmer","Kantumruy Pro","Battambang","Moul"]},
+  {k:"my",t:"พม่า",g:"က",s:"ကခဂ",f:["Noto Sans Myanmar","Padauk"]}];
 const FONT_LANG=new Map(); FONT_LANGS.forEach(L=>(L.f||[]).forEach(f=>FONT_LANG.set(f,L)));
 const _fcss=new Map();
 function ensureFontCss(name){ if(!FONT_LANG.has(name)) return Promise.resolve(); if(_fcss.has(name)) return _fcss.get(name);
@@ -981,7 +988,7 @@ function side(){
     if(!fx) h+=sec(one?"ขนาด":"ขนาดตัวอักษร",(one?dimsHTML(T0):"")+`<div class="rng"><input type="range" min="8" max="${Math.round(base()*.6)}" value="${Math.round(T0.size)}" oninput="setSize(+this.value,this)" onchange="side()">${numBox(mmOf(T0.size),"มม.",ED.tpl.res/25.4)}</div>`);
     const FL=FONT_LANGS.find(L=>L.k===(ED.fontLang||fontLangOf(T0.font)))||FONT_LANGS[0], fonts=FL.k==="th"?allFonts():FL.f; if(ED.fontOpen&&FL.f) FL.f.forEach(ensureFontCss);
     h+=sec("ฟอนต์",`<button class="fontpick" onclick="ED.fontOpen=!ED.fontOpen;ED.fontLang=null;side()" style="font-family:'${esc(T0.font)}'"><span>${esc(T0.font)}</span><i>${ED.fontOpen?"▴":"▾"}</i></button>
-      ${ED.fontOpen?`<div class="flangs">${FONT_LANGS.map(L=>`<button class="${L.k===FL.k?"on":""}" onclick="ED.fontLang='${L.k}';side()">${L.t}</button>`).join("")}</div><div class="fontgrid">${fonts.map(f=>`<button class="${f===T0.font?"on":""}" style="font-family:'${esc(f)}'" onclick="ED.fontOpen=false;setP('font','${esc(f)}')"><b>${FL.s}</b><span>${esc(f)}</span></button>`).join("")}</div>${FL.k!=="th"&&FL.k!=="en"?`<p class="small muted" style="margin:6px 0 0">ฟอนต์${FL.t}ไม่มีอักษรไทย · ถ้าพิมพ์ไทยปน ส่วนที่เป็นไทยจะใช้ฟอนต์ Kanit</p>`:""}`:""}`);
+      ${ED.fontOpen?`<div class="flangs" role="tablist" aria-label="ภาษา">${FONT_LANGS.map(L=>`<button role="tab" aria-selected="${L.k===FL.k}" class="${L.k===FL.k?"on":""}" onclick="ED.fontLang='${L.k}';side()"><i lang="${L.k==="zht"?"zh-Hant":L.k==="zh"?"zh-Hans":L.k}">${L.g}</i><b>${L.t}</b>${L.sub?`<small>${L.sub}</small>`:""}</button>`).join("")}</div><div class="fontgrid">${fonts.map(f=>`<button class="${f===T0.font?"on":""}" style="font-family:'${esc(f)}'" onclick="ED.fontOpen=false;setP('font','${esc(f)}')"><b>${FL.s}</b><span>${esc(f)}</span></button>`).join("")}</div>${FL.k!=="th"&&FL.k!=="en"?`<p class="fnote">ฟอนต์${FL.t}${FL.sub||""}ไม่มีอักษรไทย · ตัวไทยที่พิมพ์ปนจะใช้ Kanit</p>`:""}`:""}`);
     h+=sec("คู่สีแนะนำ",`<div class="combos">${COMBOS.map((c,i)=>`<button title="${c[2]}" class="${sameC(T0.color,c[0])&&T0.stroke.on&&sameC(T0.stroke.color,c[1])?"on":""}" onclick="applyCombo(${i})" style="background:${disp(c[3]||[0,0,0,0])}"><b style="color:${disp(c[0])};-webkit-text-stroke:3px ${disp(c[1])};paint-order:stroke fill;font-family:'${esc(T0.font)}'">ก</b></button>`).join("")}</div>`);
     h+=`<button class="more" onclick="ED.moreCol=!ED.moreCol;side()">ปรับสีเอง / เส้นขอบ<i>${ED.moreCol?"▴":"▾"}</i></button>`;
     if(ED.moreCol){ h+=sec("สีตัวอักษร",palHTML("color",T0.color));
