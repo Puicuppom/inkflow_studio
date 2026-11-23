@@ -167,6 +167,9 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
 @media (hover:hover){.flangs button:hover{border-color:#bfe3fb;transform:translateY(-1px);box-shadow:0 4px 10px rgba(43,159,230,.12)}}
 .flangs button:active{transform:scale(.97)}
 .flangs button.on{background:linear-gradient(135deg,#5bc0f8,#f27bb3);box-shadow:0 4px 12px rgba(236,79,149,.25)}.flangs button.on i,.flangs button.on b,.flangs button.on small{color:#fff;-webkit-text-fill-color:#fff}
+.falt{margin-top:10px;border:1px solid var(--line);border-radius:14px;padding:8px;background:linear-gradient(135deg,#f2f9ff,#fff5fa)}.falt-h{font-size:11.5px;color:#6b86a0;margin:0 2px 6px}
+.falt-row{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:#fff;border-radius:11px;padding:7px 10px;margin-top:5px;font:inherit;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(27,42,61,.06)}.falt-row.on{border-color:#bfe3fb}
+.falt-row i{font-style:normal;font-size:20px;font-weight:600;width:28px;text-align:center;background:linear-gradient(135deg,#2b9fe6,#ec4f95);-webkit-background-clip:text;background-clip:text;color:transparent}.falt-row span{flex:1;min-width:0;display:flex;flex-direction:column}.falt-row b{font-size:12.5px;color:#33506b;font-weight:600}.falt-row em{font-style:normal;font-size:14px;color:#1d3557;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.falt-row u{text-decoration:none;font-size:11.5px;color:#2b9fe6;white-space:nowrap}
 .fnote{margin:8px 2px 0;font-size:11.5px;color:#8aa4bc;line-height:1.45}
 .fontgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;max-height:260px;overflow:auto;padding:2px}
 .fontgrid button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px 6px;text-align:center}.fontgrid button b{display:block;font-size:19px;font-weight:400;line-height:1.2}
@@ -355,8 +358,14 @@ const _fcss=new Map();
 function ensureFontCss(name){ if(!FONT_LANG.has(name)) return Promise.resolve(); if(_fcss.has(name)) return _fcss.get(name);
   const p=new Promise(res=>{ const l=document.createElement("link"); l.rel="stylesheet"; l.href="https://fonts.googleapis.com/css2?family="+encodeURIComponent(name).replace(/%20/g,"+")+"&display=swap"; l.onload=l.onerror=()=>res(); document.head.appendChild(l); setTimeout(res,8000); });
   _fcss.set(name,p); return p; }
-async function loadFontFor(o){ try{ await ensureFontCss(o.font); if(document.fonts&&document.fonts.load) await document.fonts.load(fontStr(o),o.text||"ก"); }catch(e){} }
+async function loadFontFor(o){ try{ await Promise.all([o.font,...altList(o)].map(ensureFontCss)); if(document.fonts&&document.fonts.load) await document.fonts.load(fontStr(o),o.text||"ก"); }catch(e){} }
 const fontLangOf=f=>(FONT_LANG.get(f)||FONT_LANGS[0]).k;
+// ตรวจภาษาในข้อความอัตโนมัติ → ภาษาที่ฟอนต์หลักไม่มี ใช้ฟอนต์คู่ของภาษานั้น (เลือกเปลี่ยนได้)
+const SCRIPT_RE=[["th",/[\u0E00-\u0E7F]/],["lo",/[\u0E80-\u0EFF]/],["km",/[\u1780-\u17FF\u19E0-\u19FF]/],["my",/[\u1000-\u109F\uAA60-\uAA7F]/],["ko",/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/],["ja",/[\u3040-\u30FF\u31F0-\u31FF]/],["han",/[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/]];
+const ALT_DEF={th:"Kanit",ja:"M PLUS Rounded 1c",ko:"Jua",zh:"ZCOOL KuaiLe",zht:"LXGW WenKai TC",lo:"Noto Sans Lao Looped",km:"Kantumruy Pro",my:"Padauk"};
+function scriptsOf(o){ const t=o.text||"", out=[], pl=fontLangOf(o.font); SCRIPT_RE.forEach(([k,re])=>{ if(!re.test(t)) return; if(k==="han"){ if(out.includes("ja")||pl==="ja"||pl==="zh"||pl==="zht") return; k=(o.fontAlt&&o.fontAlt.zht)?"zht":"zh"; } if(k===pl||out.includes(k)) return; if(k==="ja"&&(pl==="zh"||pl==="zht")) {} out.push(k); }); return out; }
+const altFont=(o,k)=>(o.fontAlt&&o.fontAlt[k])||ALT_DEF[k];
+const altList=o=>scriptsOf(o).map(k=>altFont(o,k));
 const FONTS_STD=["Kanit","Prompt","Mitr","Sarabun","Itim","Sriracha","Pattaya","Chonburi","Mali","Charm","Athiti","Chakra Petch","Bai Jamjuree","Niramit","Krub","Fahkwang","Srisakdi","Thasadith"];
 // ชื่อฟอนต์จริงจากตาราง name ในไฟล์ (แบบเดียวกับที่ Photoshop แสดง) — nameID 16 (Typographic Family) หรือ 1 (Family)
 function fontFamilyName(buf){ try{ const v=new DataView(buf); let tag=v.getUint32(0); if(tag===0x774F4646||tag===0x774F4632) return null; // woff/woff2: ใช้ชื่อไฟล์
@@ -693,7 +702,7 @@ function base(){ const S=safeRect(); return Math.min(S.w,S.h); }
 // ชื่อจาก layout ของร้าน: ล็อกตำแหน่ง/ขนาดโซน (ลูกค้าแก้ได้แค่ข้อความ ฟอนต์ สี กรอบ)
 const FIX=o=>!!(o&&ED.layoutMode==null&&o.type==="text"&&o.link0!=null);
 const hasFix=()=>!!(ED.doc&&ED.doc.objects.some(FIX));
-function setGroupText(k,v){ softCp(); const T=ED.doc.objects.filter(o=>o.type==="text"&&o.link0===k); T.forEach(o=>{ o.text=v; refit(o); }); regridOf(T); draw(); if(ED.sel.size) side(); }
+function setGroupText(k,v){ softCp(); const T=ED.doc.objects.filter(o=>o.type==="text"&&o.link0===k); T.forEach(o=>{ o.text=v; refit(o); }); if(T[0]&&altList(T[0]).length) T.forEach(fontReady); regridOf(T); draw(); if(ED.sel.size){ clearTimeout(ED._gst); ED._gst=setTimeout(side,400); } }
 function addText(kind){
   const B=base(), size=Math.round(B*(kind==="h"?.22:kind==="s"?.09:.14));
   const o={type:"text",text:kind==="h"?"ชื่อของคุณ":"พิมพ์ข้อความ",font:allFonts()[0]||"Kanit",size,color:[0,85,20,0],stroke:{on:true,w:STD_STROKE(),color:[0,0,0,0]},align:"center",bold:kind==="h",lh:1.15,ls:0};
@@ -805,7 +814,7 @@ function addShape(kind){ const S=SHAPES[kind], B=base(); let w=Math.round(B*.6),
 function fontReady(o){ if(!document.fonts||!document.fonts.load) return; loadFontFor(o).then(()=>{ if(ED.doc&&ED.doc.objects.includes(o)){ refit(o); draw(); } }).catch(()=>{}); }
 // ---------- ข้อความ: วัดขนาด
 const mctx=document.createElement("canvas").getContext("2d");
-const fontStr=o=>`${o.italic?"italic ":""}${o.bold?"700":"400"} ${o.size}px "${o.font}", Kanit, sans-serif`;
+const fontStr=o=>`${o.italic?"italic ":""}${o.bold?"700":"400"} ${o.size}px "${o.font}", ${altList(o).map(f=>`"${f}", `).join("")}Kanit, sans-serif`;
 function measure(o){ mctx.font=fontStr(o); try{ mctx.letterSpacing=(o.ls||0)+"px"; }catch(e){}
   const lines=textLines(o); let w=0, asc=0, des=0;
   lines.forEach(l=>{ const m=mctx.measureText(l||" "); w=Math.max(w,m.width); asc=Math.max(asc,m.actualBoundingBoxAscent||o.size*.8); des=Math.max(des,m.actualBoundingBoxDescent||o.size*.25); });
@@ -988,7 +997,9 @@ function side(){
     if(!fx) h+=sec(one?"ขนาด":"ขนาดตัวอักษร",(one?dimsHTML(T0):"")+`<div class="rng"><input type="range" min="8" max="${Math.round(base()*.6)}" value="${Math.round(T0.size)}" oninput="setSize(+this.value,this)" onchange="side()">${numBox(mmOf(T0.size),"มม.",ED.tpl.res/25.4)}</div>`);
     const FL=FONT_LANGS.find(L=>L.k===(ED.fontLang||fontLangOf(T0.font)))||FONT_LANGS[0], fonts=FL.k==="th"?allFonts():FL.f; if(ED.fontOpen&&FL.f) FL.f.forEach(ensureFontCss);
     h+=sec("ฟอนต์",`<button class="fontpick" onclick="ED.fontOpen=!ED.fontOpen;ED.fontLang=null;side()" style="font-family:'${esc(T0.font)}'"><span>${esc(T0.font)}</span><i>${ED.fontOpen?"▴":"▾"}</i></button>
-      ${ED.fontOpen?`<div class="flangs" role="tablist" aria-label="ภาษา">${FONT_LANGS.map(L=>`<button role="tab" aria-selected="${L.k===FL.k}" class="${L.k===FL.k?"on":""}" onclick="ED.fontLang='${L.k}';side()"><i lang="${L.k==="zht"?"zh-Hant":L.k==="zh"?"zh-Hans":L.k}">${L.g}</i><b>${L.t}</b>${L.sub?`<small>${L.sub}</small>`:""}</button>`).join("")}</div><div class="fontgrid">${fonts.map(f=>`<button class="${f===T0.font?"on":""}" style="font-family:'${esc(f)}'" onclick="ED.fontOpen=false;setP('font','${esc(f)}')"><b>${FL.s}</b><span>${esc(f)}</span></button>`).join("")}</div>${FL.k!=="th"&&FL.k!=="en"?`<p class="fnote">ฟอนต์${FL.t}${FL.sub||""}ไม่มีอักษรไทย · ตัวไทยที่พิมพ์ปนจะใช้ Kanit</p>`:""}`:""}`);
+      ${ED.fontOpen?`<div class="flangs" role="tablist" aria-label="ภาษา">${FONT_LANGS.map(L=>`<button role="tab" aria-selected="${L.k===FL.k}" class="${L.k===FL.k?"on":""}" onclick="ED.fontLang='${L.k}';side()"><i lang="${L.k==="zht"?"zh-Hant":L.k==="zh"?"zh-Hans":L.k}">${L.g}</i><b>${L.t}</b>${L.sub?`<small>${L.sub}</small>`:""}</button>`).join("")}</div><div class="fontgrid">${fonts.map(f=>`<button class="${f===T0.font?"on":""}" style="font-family:'${esc(f)}'" onclick="ED.fontOpen=false;setP('font','${esc(f)}')"><b>${FL.s}</b><span>${esc(f)}</span></button>`).join("")}</div>`:""}${(()=>{ const sc=scriptsOf(T0); if(!sc.length) return ""; const LL=k=>FONT_LANGS.find(L=>L.k===k)||FONT_LANGS[0];
+        return `<div class="falt"><div class="falt-h">ตรวจพบภาษาอื่นในข้อความ · ใช้ฟอนต์คู่ให้อัตโนมัติ</div>${sc.map(k=>{ const L=LL(k), f=altFont(T0,k), open=ED.altOpen===k, list=k==="th"?allFonts():(L.f||[]); if(open) list.forEach(ensureFontCss);
+          return `<button class="falt-row ${open?"on":""}" onclick="ED.altOpen=${open?"null":`'${k}'`};side()"><i lang="${k}">${L.g}</i><span><b>${L.t}${L.sub?` ${L.sub}`:""}</b><em style="font-family:'${esc(f)}'">${esc(f)}</em></span><u>${open?"▴":"เปลี่ยน ▾"}</u></button>${open?`<div class="fontgrid">${list.map(x=>`<button class="${x===f?"on":""}" style="font-family:'${esc(x)}'" onclick="setAlt('${k}','${esc(x)}')"><b>${L.s}</b><span>${esc(x)}</span></button>`).join("")}${k==="zh"||k==="zht"?`<button onclick="setAlt('${k==="zh"?"zht":"zh"}','${ALT_DEF[k==="zh"?"zht":"zh"]}')"><b>${k==="zh"?"繁":"中"}</b><span>ใช้${k==="zh"?"ตัวเต็ม":"ตัวย่อ"}แทน</span></button>`:""}</div>`:""}`; }).join("")}</div>`; })()}`);
     h+=sec("คู่สีแนะนำ",`<div class="combos">${COMBOS.map((c,i)=>`<button title="${c[2]}" class="${sameC(T0.color,c[0])&&T0.stroke.on&&sameC(T0.stroke.color,c[1])?"on":""}" onclick="applyCombo(${i})" style="background:${disp(c[3]||[0,0,0,0])}"><b style="color:${disp(c[0])};-webkit-text-stroke:3px ${disp(c[1])};paint-order:stroke fill;font-family:'${esc(T0.font)}'">ก</b></button>`).join("")}</div>`);
     h+=`<button class="more" onclick="ED.moreCol=!ED.moreCol;side()">ปรับสีเอง / เส้นขอบ<i>${ED.moreCol?"▴":"▾"}</i></button>`;
     if(ED.moreCol){ h+=sec("สีตัวอักษร",palHTML("color",T0.color));
@@ -1068,11 +1079,12 @@ const tgt=()=>{ const sel=selObjs(); if(sel.length>1) return sel; const out=new 
 const refit=o=>{ if(o.type!=="text") return; if(o.box) fitBox(o); else measure(o); if(o.gid&&o.cell&&o.box) qRegrid(o); };
 // ชื่อในตาราง: จัดทั้งชุดใหม่จากช่องเดิม (ขนาดเท่ากันทุกแถว) หลังแก้สี/กรอบ/ฟอนต์
 function qRegrid(o){ (ED._rq=ED._rq||new Set()).add(o); clearTimeout(ED._rt); ED._rt=setTimeout(()=>{ const q=[...ED._rq]; ED._rq.clear(); regridOf(q); draw(); },0); }
-function setText(v){ softCp(); const T=tgt().filter(o=>o.type==="text"); T.forEach(x=>{ x.text=v; refit(x); }); regridOf(T); draw(); }
+function setText(v){ softCp(); const T=tgt().filter(o=>o.type==="text"); T.forEach(x=>{ x.text=v; refit(x); }); if(T[0]&&altList(T[0]).length) T.forEach(fontReady); regridOf(T); draw(); }
 function regridOf(T){ const g=new Set(T.filter(o=>o.gid&&o.cell).map(o=>o.gid)); g.forEach(id=>regrid(ED.doc.objects.filter(o=>o.gid===id))); }
 // ตั้งขนาดตัวอักษรให้ทั้งกลุ่มที่เชื่อมกัน (คงจุดกึ่งกลางของแต่ละช่อง)
 function sizeGroup(o,size,except){ linked(o).forEach(x=>{ if(x===except) return; const cx=x.x+x.w/2, cy=x.y+x.h/2, f=size/x.size; delete x.box; x.size=size; if(x.stroke) x.w=0; x.h=0; measure(x); x.x=Math.round(cx-x.w/2); x.y=Math.round(cy-x.h/2); }); }
 function setSize(v,el){ softCp(); const sel=selObjs().filter(o=>o.type==="text"); if(sel.length>1||selObjs().length>1) sel.forEach(x=>{ const cx=x.x+x.w/2, cy=x.y+x.h/2; delete x.box; x.size=v; x.w=0; x.h=0; measure(x); x.x=Math.round(cx-x.w/2); x.y=Math.round(cy-x.h/2); }); else sel.forEach(o=>sizeGroup(o,v)); if(el) outv(el,mmOf(v)); draw(); }
+function setAlt(k,f){ cp(); const T=tgt().filter(o=>o.type==="text"); T.forEach(o=>{ o.fontAlt=Object.assign({},o.fontAlt||{},{[k]:f}); if(k==="zh"||k==="zht"){ delete o.fontAlt[k==="zh"?"zht":"zh"]; } refit(o); fontReady(o); }); regridOf(T); ED.altOpen=null; draw(); side(); }
 function setP(k,v,soft,el){ soft?softCp():cp(); const T=k==="opacity"?selObjs():tgt(); T.forEach(o=>{ o[k]=v; if(o.type==="text"){ refit(o); fontReady(o); } }); if(k!=="opacity") regridOf(T); draw(); if(el) outv(el,k==="opacity"?Math.round(v*100):k==="lh"?Math.round(v*100):v); else side(); }
 function setColor(key,c,soft){ soft?softCp():cp(); tgt().forEach(o=>{ if(key==="color"&&o.type==="text") o.color=c; if(key==="fill"&&o.type==="shape") o.fill=c; if(key==="stroke"&&o.type==="text") o.stroke.color=c; if(key==="sstroke"&&o.type==="shape") o.stroke.color=c; if(key==="ioutline"&&o.type==="image"&&o.outline) o.outline.color=c; if(key==="ffill"&&o.type==="text"&&o.frame) o.frame.fill=c; if(key==="fstroke"&&o.type==="text"&&o.frame) o.frame.stroke.color=c; }); draw(); if(!soft) side(); }
 function setFill(c){ cp(); selObjs().forEach(o=>{ if(o.type==="shape") o.fill=c; }); draw(); side(); }
