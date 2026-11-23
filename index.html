@@ -224,7 +224,13 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
 .side .phd{margin-bottom:10px;gap:8px;justify-content:flex-start}.side .phd b{white-space:nowrap}
 .tbar{display:flex;gap:6px;margin-bottom:14px}.tb{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:36px;border:1px solid var(--line);background:#fff;border-radius:10px;font-size:13px;color:#475569;padding:0 8px;white-space:nowrap;transition:.12s}
 .tb svg{width:16px;height:16px;flex:none}.tb:hover{border-color:var(--sky);color:var(--skyD);background:var(--sky2)}.tb.bad:hover{border-color:#fca5a5;color:var(--bad);background:#fef2f2}
-.fshapes{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:6px}.fshapes button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px;height:34px}.fshapes img{width:100%;height:100%;object-fit:contain}.fshapes button:hover{border-color:var(--sky)}.fshapes button.on{border-color:var(--sky);background:var(--sky2);box-shadow:0 0 0 1px var(--sky)}
+.fgal{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fgal button{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid var(--line);border-radius:14px;padding:8px 6px 7px;font:inherit;cursor:pointer;background:linear-gradient(160deg,#f6fbff,#fff 55%,#fff6fa);box-shadow:0 1px 2px rgba(27,42,61,.05);transition:transform .14s,box-shadow .14s,border-color .14s}
+.fgal button img{width:100%;height:78px;object-fit:contain}.fgal button span{font-size:12px;color:#46607a;font-weight:500}
+@media (hover:hover){.fgal button:hover{border-color:#bfe3fb;transform:translateY(-1px);box-shadow:0 6px 14px rgba(43,159,230,.13)}}
+.fgal button:active{transform:scale(.97)}
+.fgal.one{grid-template-columns:1fr}.fgal.one button{flex-direction:row;gap:8px;padding:6px 12px}.fgal.one button img{height:62px;flex:1;min-width:0;object-fit:contain;object-position:left center}.fgal.one button span{width:70px;text-align:left}
+.fshapes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}.fshapes button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:4px;height:58px;transition:border-color .14s,box-shadow .14s}.fshapes button.on{border-color:#f27bb3;box-shadow:0 0 0 2px rgba(242,123,179,.25)}.fshapes img{width:100%;height:100%;object-fit:contain}.fshapes button:hover{border-color:var(--sky)}.fshapes button.on{border-color:var(--sky);background:var(--sky2);box-shadow:0 0 0 1px var(--sky)}
 .gridrow{display:flex;align-items:center;gap:6px}.gridrow .unit{flex:1}.gridrow .unit input{width:100%}.gridrow span{color:var(--muted)}
 .nmrow{display:block;margin:0 0 12px}.nmrow span{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--ink,#1d3557);margin-bottom:6px}.nmrow em{font-style:normal;font-weight:400;color:#8aa4bc;font-size:12px}.nmrow input{width:100%;box-sizing:border-box;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit}.nmrow input:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(91,192,248,.2)}
 .combos{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.combos button{aspect-ratio:1;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;padding:0;background:#fff}
@@ -924,10 +930,17 @@ function shapePath(kind,w,h,p){ { const S0=SHAPES[kind]; if(S0&&S0.base) return 
 }
 const iconCache={};
 // กรอบที่แสดงให้เลือก (กรอบอื่นยังเปิดงานเก่าได้)
-const SHAPES_SHOW=["round","roundS","pill","pillS","scallop","scallopS","cloud","bear","cat","bunny","candy","banner"], SHAPES_ICON=["pill","pillS","round","roundS","scallop","cloud"];
-function shapeIcon(k,ic){ const ck=k+(ic?"_i":""); if(iconCache[ck]) return iconCache[ck]; const c=document.createElement("canvas"); c.width=110; c.height=80; const x=c.getContext("2d"), S=SHAPES[k];
-  let h=Math.min(64,96*(S.ar||.5)), w=h/(S.ar||.5); if(w>96){ w=96; h=w*(S.ar||.5); } x.translate((110-w)/2,(80-h)/2); const P=shapePath(k,w,h,S.p);
-  if(!S.outline){ x.fillStyle="#dcefff"; x.fill(P,P._eo?"evenodd":"nonzero"); } x.lineWidth=S.outline?4:2.2; x.lineJoin="round"; x.strokeStyle="#2b9fe6"; x.stroke(P); if(ic){ const q=h*.62, ix=h*.2, iy=(h-q)/2; x.fillStyle="#fff"; x.fillRect(ix,iy,q,q); x.setLineDash([3,2]); x.lineWidth=1.4; x.strokeRect(ix,iy,q,q); x.setLineDash([]); x.fillStyle="#f4a259"; x.beginPath(); x.arc(ix+q/2,iy+q/2,q*.3,0,7); x.fill(); x.fillStyle="#2b9fe6"; x.fillRect(ix+q+h*.15,h*.42,w-ix-q-h*.45,h*.16); } return iconCache[ck]=c.toDataURL(); }
+const SHAPES_SHOW=["round","roundS","pill","pillS","scallop","scallopS"], SHAPES_ICON=SHAPES_SHOW;
+// พรีวิวกรอบ = วาดจริงแบบเดียวกับงาน (ชื่อตัวอย่าง + เส้นเย็บ + การ์ตูนตัวอย่าง)
+function shapeIcon(k,ic){ const lib=ic?(CFG.library||[]).find(l=>l.cat==="cartoon"):null, ck=k+(ic?"_i"+(lib?lib.id:""):"")+"|"+(ED.tpl?ED.tpl.id:""); if(iconCache[ck]) return iconCache[ck];
+  const c=document.createElement("canvas"), CW=ic?340:220, CH=ic?96:150; c.width=CW; c.height=CH; const x=c.getContext("2d");
+  if(!ED.tpl){ return ""; }
+  const mm=ED.tpl.res/25.4, o={type:"text",id:"_pv",text:"น้องปัน",font:"Kanit",size:Math.round(6*mm),color:[0,75,25,0],stroke:{on:true,w:Math.round(.7*mm),color:[0,0,0,0]},align:"center",bold:true,lh:1.15,ls:0,x:0,y:0,w:0,h:0,rot:0};
+  o.frame=defFrame(k); o.frame.fill=[3,0,0,0]; o.frame.stroke={on:true,w:Math.round(.45*mm),color:[0,62,10,0]}; if(ic) o.frame.icon={side:"left",src:lib?lib.src:null};
+  if(lib&&!ED.img.get(lib.src)){ imgOf(lib.src).then(()=>{ Object.keys(iconCache).forEach(q=>{ if(q.includes("_i")) delete iconCache[q]; }); if(ED.tab==="shape") tab("shape"); }); }
+  measure(o); const E=fext(o), W=o.w+E.l+E.r, H=o.h+E.t+E.b, sc=Math.min((CW-20)/W,(CH-20)/H);
+  x.translate(CW/2,CH/2); x.scale(sc,sc); x.translate(-(E.r-E.l)/2-o.w/2,-(E.b-E.t)/2-o.h/2); const z0=ED.z; ED.z=sc; try{ renderTo(x,o); }catch(e){} ED.z=z0;
+  return iconCache[ck]=c.toDataURL(); }
 
 // ---------- แผงซ้าย
 function tab(t){
@@ -946,8 +959,8 @@ function tab(t){
     <button class="big" onclick="pickUpload('cartoon')"><span class="ic">⤒</span><span><b>อัปโหลดการ์ตูนของฉัน</b><span>PNG พื้นใสสวยที่สุด</span></span></button>
     ${lib("cartoon").length?`<div class="grid3">${lib("cartoon").map(l=>`<button onclick="addLibItem('${l.id}')"><img src="${l.src}">${esc(l.name)}</button>`).join("")}</div>`:`<p class="hint">ร้านยังไม่ได้เพิ่มการ์ตูน</p>`}`;
   else if(t==="shape") h=`<h3>กรอบชื่อ</h3><div class="seg" style="margin-bottom:10px"><button class="on" style="cursor:default">แตะเพื่อใส่กรอบให้ชื่อที่เลือก</button></div>
-    <div class="grid3">${SHAPES_SHOW.map(k=>`<button onclick="useShape('${k}')"><img src="${shapeIcon(k)}">${SHAPES[k].t}</button>`).join("")}</div>
-    <div class="cat">กรอบชื่อ + การ์ตูน</div><div class="grid3">${SHAPES_ICON.map(k=>`<button onclick="useShape('${k}','left')"><img src="${shapeIcon(k,true)}">${SHAPES[k].t}</button>`).join("")}</div>
+    <div class="fgal">${SHAPES_SHOW.map(k=>`<button onclick="useShape('${k}')"><img src="${shapeIcon(k)}" alt=""><span>${SHAPES[k].t}</span></button>`).join("")}</div>
+    <div class="cat">กรอบชื่อ + การ์ตูน</div><div class="fgal one">${SHAPES_ICON.map(k=>`<button onclick="useShape('${k}','left')"><img src="${shapeIcon(k,true)}" alt=""><span>${SHAPES[k].t}</span></button>`).join("")}</div>
     ${lib("frame").length?`<div class="cat">กรอบจากร้าน</div><div class="grid3">${lib("frame").map(l=>`<button onclick="addLibItem('${l.id}')"><img src="${l.src}">${esc(l.name)}</button>`).join("")}</div>`:""}`;
   else if(t==="upload") h=`<h3>อัปโหลดรูป</h3>
     <button class="big" onclick="pickUpload('image')"><span class="ic">⤒</span><span><b>เลือกรูปจากเครื่อง</b><span>ใช้รูปความละเอียดสูงจะคมชัดกว่า</span></span></button>
