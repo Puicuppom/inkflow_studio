@@ -613,7 +613,7 @@ async function startDesign(i,mode,pid){ $("gear").style.display="none";
   const fromPreset=async()=>{ ED.doc.objects=presetObjs(P); await Promise.all(ED.doc.objects.filter(o=>o.src).map(o=>imgOf(o.src))); await Promise.all(ED.doc.objects.filter(o=>o.frame&&o.frame.icon&&o.frame.icon.src).map(o=>imgOf(o.frame.icon.src))); ED.doc.objects.filter(o=>o.type==="text").forEach(o=>fontReady(o)); draw(); side(); if(ED.tab==="text") tab("text"); };
   const fresh=async()=>{ if(P) await fromPreset(); else applyLayout(true); };
   await fresh(); if(ED.presetEdit) return;
-  if(saved&&saved.objects&&saved.objects.length) modal(`<h2>มีงานที่ทำค้างไว้</h2><p>ทำต่อจากเดิมไหม</p>`,[["เริ่มใหม่",false],["ทำต่อ",true,"pri"]]).then(async y=>{ if(y){ ED.doc=saved; ED.doc.objects.forEach(o=>o.id=uid()); await Promise.all(ED.doc.objects.filter(o=>o.src).map(o=>imgOf(o.src))); draw(); side(); if(ED.tab==="text") tab("text"); } });
+  if(saved&&saved.objects&&saved.objects.length) modal(`<h2>มีงานที่ทำค้างไว้</h2><p>ทำต่อจากเดิมไหม</p>`,[["เริ่มใหม่",false],["ทำต่อ",true,"pri"]]).then(async y=>{ if(y){ ED.doc=saved; ED.doc.objects.forEach(o=>o.id=uid()); await Promise.all(ED.doc.objects.filter(o=>o.frame&&o.frame.icon&&o.frame.icon.src).map(o=>imgOf(o.frame.icon.src))); ED.doc.objects.filter(o=>o.type==="text"&&o.box).forEach(o=>fitBox(o)); new Set(ED.doc.objects.filter(o=>o.gid&&o.cell).map(o=>o.gid)).forEach(g=>regrid(ED.doc.objects.filter(o=>o.gid===g))); await Promise.all(ED.doc.objects.filter(o=>o.src).map(o=>imgOf(o.src))); draw(); side(); if(ED.tab==="text") tab("text"); } });
 }
 // ---------- แบบสำเร็จ (เช่น A001): ร้านจัดการ์ตูน/สี/กรอบไว้ให้ ลูกค้าแค่พิมพ์ชื่อ
 const presetsOf=t=>(CFG.presets||[]).filter(p=>p.tpl===t.id).sort((a,b)=>String(a.code).localeCompare(String(b.code),'th',{numeric:true}));
@@ -717,15 +717,23 @@ function addText(kind){
 const fpad=o=>o.type==="text"&&o.frame?(o.frame.pad||0)+(o.frame.stroke&&o.frame.stroke.on?o.frame.stroke.w/2:0):0;
 // ช่องการ์ตูนในกรอบ (ซ้าย/ขวาของชื่อ): ขนาดสี่เหลี่ยมจัตุรัสตามความสูงกรอบ
 // ช่องการ์ตูน: สี่เหลี่ยมสูงเท่าชื่อ ชิดชื่อ (ห่าง 0.4 มม.) · การ์ตูนชิดด้านที่ติดชื่อ
-const iconGap=o=>Math.round(0.4/25.4*ED.tpl.res);
+const iconGap=o=>Math.round(1/25.4*ED.tpl.res);
 // การ์ตูนในกรอบ: ใหญ่กว่ากรอบได้ (k เท่าของความสูงกรอบ) วางทับขอบกรอบด้านข้าง เหมือนสติกเกอร์ชื่อทั่วไป
 const ICON_K=o=>{ const k=o.frame&&o.frame.icon&&o.frame.icon.k; return k==null?1.45:k; }, ICON_OV=.36;
 function fbody(o){ const p=fpad(o), X=o.frame&&SHAPES[o.frame.shape]&&SHAPES[o.frame.shape].ext||{}, H=o.type==="text"&&o.frame?o.h+2*(o.frame.pad||0):0, E={l:p+H*(X.l||0),r:p+H*(X.r||0),t:p+H*(X.t||0),b:p+H*(X.b||0)}, F=o.frame;
   if(F&&F.icon){ const Hb=o.h+E.t+E.b, sz=Hb*ICON_K(o), g=iconGap(o), sd=F.icon.side==="left"?"l":"r"; E[sd]=Math.max(p+H*(X[sd]||0)*.35,g+sz*ICON_OV); } return E; }
 const iconW=o=>{ const F=o.frame; if(!(F&&F.icon)) return 0; const E=fbody(o); return Math.round((o.h+E.t+E.b)*ICON_K(o)*(1-ICON_OV)+(F.icon.side==="left"?E.l:E.r)); };
 const iconRect=o=>{ const E=fbody(o), Hb=o.h+E.t+E.b, sz=Hb*ICON_K(o), y=-E.t+(Hb-sz)/2; return {x:o.frame.icon.side==="left"?-E.l+sz*ICON_OV-sz:o.w+E.r-sz*ICON_OV,y,s:sz}; };
-function iconFit(o,im,R){ const W0=im.naturalWidth||im.width, H0=im.naturalHeight||im.height, k=Math.min(R.s/W0,R.s/H0), w=W0*k, h=H0*k; return {x:o.frame.icon.side==="left"?R.x+R.s-w:R.x,y:R.y+(R.s-h)/2,w,h}; }
-function fext(o){ if(o.type==='image'&&o.outline&&o.outline.on){ const w=o.outline.w; return {l:w,r:w,t:w,b:w}; } if(o.type==='text'&&o.frame&&o.frame.icon){ const E=fbody(o), R=iconRect(o); return {l:Math.max(E.l,-R.x),r:Math.max(E.r,R.x+R.s-o.w),t:Math.max(E.t,-R.y),b:Math.max(E.b,R.y+R.s-o.h)}; } const p=fpad(o), iw=iconW(o), sd=o.frame&&o.frame.icon?o.frame.icon.side:null, X=o.frame&&SHAPES[o.frame.shape]&&SHAPES[o.frame.shape].ext||{}, H=o.type==="text"&&o.frame?o.h+2*(o.frame.pad||0):0; return {l:p+(sd==="left"?iw+H*(X.l||0)*.7:H*(X.l||0)),r:p+(sd==="right"?iw+H*(X.r||0)*.7:H*(X.r||0)),t:p+H*(X.t||0),b:p+H*(X.b||0)}; }
+// ขอบเขตจริงของการ์ตูน (ตัดพื้นโปร่งใสรอบรูป) → ชื่อชิดตัวการ์ตูนจริง
+const _ib=new WeakMap();
+function imgBounds(im){ if(_ib.has(im)) return _ib.get(im); const W0=im.naturalWidth||im.width, H0=im.naturalHeight||im.height; let r={x:0,y:0,w:W0,h:H0};
+  try{ const S=Math.min(1,160/Math.max(W0,H0)), cw=Math.max(1,Math.round(W0*S)), chh=Math.max(1,Math.round(H0*S)), c=document.createElement("canvas"); c.width=cw; c.height=chh; const x=c.getContext("2d",{willReadFrequently:true}); x.drawImage(im,0,0,cw,chh); const d=x.getImageData(0,0,cw,chh).data; let x0=cw,y0=chh,x1=-1,y1=-1;
+    for(let y=0;y<chh;y++) for(let X=0;X<cw;X++) if(d[(y*cw+X)*4+3]>16){ if(X<x0)x0=X; if(X>x1)x1=X; if(y<y0)y0=y; if(y>y1)y1=y; }
+    if(x1>=0) r={x:x0/S,y:y0/S,w:(x1-x0+1)/S,h:(y1-y0+1)/S}; }catch(e){}
+  _ib.set(im,r); return r; }
+function iconFit(o,im,R,bim){ const W0=im.naturalWidth||im.width, H0=im.naturalHeight||im.height, B0=bim||im, bs=(W0/((B0.naturalWidth||B0.width)||W0)), bb=imgBounds(B0), b={x:bb.x*bs,y:bb.y*bs,w:bb.w*bs,h:bb.h*bs}, k=Math.min(R.s/b.w,R.s/b.h), w=W0*k, h=H0*k, cw=b.w*k, chh=b.h*k;
+  const cx=o.frame.icon.side==="left"?R.x+R.s-cw:R.x, cy=R.y+(R.s-chh)/2; return {x:cx-b.x*k,y:cy-b.y*k,w,h}; }
+function fext(o){ if(o.type==='image'&&o.outline&&o.outline.on){ const w=o.outline.w; return {l:w,r:w,t:w,b:w}; } if(o.type==='text'&&o.frame&&o.frame.icon){ const E=fbody(o), R=iconRect(o), rg=o.frame.icon.ring===false?0:ED.tpl.res/25.4*.5; return {l:Math.max(E.l,-R.x+rg),r:Math.max(E.r,R.x+R.s-o.w+rg),t:Math.max(E.t,-R.y+rg),b:Math.max(E.b,R.y+R.s-o.h+rg)}; } const p=fpad(o), iw=iconW(o), sd=o.frame&&o.frame.icon?o.frame.icon.side:null, X=o.frame&&SHAPES[o.frame.shape]&&SHAPES[o.frame.shape].ext||{}, H=o.type==="text"&&o.frame?o.h+2*(o.frame.pad||0):0; return {l:p+(sd==="left"?iw+H*(X.l||0)*.7:H*(X.l||0)),r:p+(sd==="right"?iw+H*(X.r||0)*.7:H*(X.r||0)),t:p+H*(X.t||0),b:p+H*(X.b||0)}; }
 function fitBox(o){ const B=o.box; if(!B) return; const vert=B.vert!=null?B.vert:B.h>B.w*1.4; o.rot=vert?-90:0; const bw=vert?B.h:B.w, bh=vert?B.w:B.h;
   o.w=0; o.h=0; measure(o); const fp=fpad(o)*2, ic=o.frame&&o.frame.icon?1:0; const f=Math.min(Math.max(1,bw-fp)/(o.w+ic*o.h*1.6),Math.max(1,bh-fp)/(o.h*(ic?1.7:1))); o.size=Math.max(4,o.size*f); o.w=0; o.h=0; measure(o);
   for(let it=0;it<4;it++){ const E=fext(o), W=o.w+E.l+E.r, H=o.h+E.t+E.b, g=Math.min(bw/W,bh/H); if(g>=.999) break; o.size=Math.max(4,o.size*g*.995); o.w=0; o.h=0; measure(o); }
@@ -1226,7 +1234,7 @@ function renderTo(x,o,img,ch){ const col=ch==null?disp:(c=>chanGray(c,ch)); x.sa
         else P2=typeof ST.stitch==="string"?shapePath(ST.stitch,Wd-2*dd,Hd-2*dd,ST.sp):shapePath(F.shape,Wd-2*dd,Hd-2*dd,F.p); x.save(); x.translate(dd,dd); x.setLineDash(P2._dash||[Hd*.075,Hd*.05]); x.lineDashOffset=P2._off||0; x.lineCap="round"; x.lineWidth=Math.max(1,Hd*.022); x.strokeStyle=col(F.stroke&&F.stroke.on?F.stroke.color:(o.color||[0,0,0,100])); x.stroke(P2); x.restore(); }
       x.restore();
       if(F.icon){ const IR=iconRect(o), ix=IR.x, iy=IR.y, isz=IR.s;
-        if(F.icon.src){ const im=ch==null?(ED.proof.get(F.icon.src)||ED.img.get(F.icon.src)):((ED.seps.get(F.icon.src)||[])[ch]); if(im){ const q=iconFit(o,im,IR), SW=im.naturalWidth||im.width, kk=q.w/SW; if(F.icon.ring!==false){ const ring=ringOf(im,ED.tpl.res/25.4*.5/kk,col([0,0,0,0])); x.drawImage(ring,q.x-ring._R*kk,q.y-ring._R*kk,ring.width*kk,ring.height*kk); } x.drawImage(ch==null?mipOf(im,q.w*ED.z*(window.devicePixelRatio||1)):im,q.x,q.y,q.w,q.h); } else if(ch==null) imgOf(F.icon.src).then(()=>draw()); }
+        if(F.icon.src){ const im=ch==null?(ED.proof.get(F.icon.src)||ED.img.get(F.icon.src)):((ED.seps.get(F.icon.src)||[])[ch]); if(im){ const q=iconFit(o,im,IR,ED.img.get(F.icon.src)||im), SW=im.naturalWidth||im.width, kk=q.w/SW; if(F.icon.ring!==false){ const ring=ringOf(im,ED.tpl.res/25.4*.5/kk,col([0,0,0,0])); x.drawImage(ring,q.x-ring._R*kk,q.y-ring._R*kk,ring.width*kk,ring.height*kk); } x.drawImage(ch==null?mipOf(im,q.w*ED.z*(window.devicePixelRatio||1)):im,q.x,q.y,q.w,q.h); } else if(ch==null) imgOf(F.icon.src).then(()=>draw()); }
         else if(ch==null){ const z=ED.z; x.save(); x.fillStyle="rgba(255,255,255,.92)"; x.beginPath(); x.roundRect?x.roundRect(ix,iy,isz,isz,isz*.14):x.rect(ix,iy,isz,isz); x.fill(); x.setLineDash([5/z,4/z]); x.strokeStyle="rgba(43,159,230,.9)"; x.lineWidth=1.4/z; x.stroke(); x.setLineDash([]); x.lineWidth=Math.max(1.5/z,isz*.06); x.beginPath(); x.moveTo(ix+isz*.35,iy+isz/2); x.lineTo(ix+isz*.65,iy+isz/2); x.moveTo(ix+isz/2,iy+isz*.35); x.lineTo(ix+isz/2,iy+isz*.65); x.stroke(); x.restore(); } } }
     drawText(x,o,col); }
   else if(o.type==="slot"&&ch==null){ const z=ED.z, r=Math.min(o.w,o.h)*.1; x.fillStyle="rgba(43,159,230,.10)"; x.strokeStyle="rgba(43,159,230,.9)"; x.lineWidth=1.6/z; x.setLineDash([7/z,5/z]);
