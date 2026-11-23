@@ -842,7 +842,7 @@ const SHAPES={
   tag:{t:"ป้ายแท็ก",ar:.45,ext:{l:.35,r:.06}},ribbon:{t:"ริบบิ้น",ar:.3},bubble:{t:"คำพูด",ar:.62},heart:{t:"หัวใจ",ar:.9,ext:{l:.2,r:.2,t:.12,b:.4}},
   star:{t:"ดาว",ar:1,p:{n:5,i:.48},ext:{l:.45,r:.45,t:.35,b:.35}},badge:{t:"ตรา",ar:1,p:{n:18,i:.86},ext:{l:.22,r:.22,t:.16,b:.16}},hexagon:{t:"หกเหลี่ยม",ar:.87,ext:{l:.25,r:.25}},frame:{t:"กรอบเส้น",ar:.6,p:{r:.2},outline:true},
   circleframe:{t:"วงกรอบ",ar:1,outline:true,ext:{l:.22,r:.22,t:.16,b:.16}},flower:{t:"ดอกไม้",ar:1,p:{n:6},ext:{l:.28,r:.28,t:.22,b:.22}},
-  pillS:{t:"แคปซูลเย็บ",ar:.35,ext:{l:.32,r:.32},base:"pill",stitch:1},roundS:{t:"มุมมนเย็บ",ar:.6,p:{r:.25},base:"round",stitch:1},scallopS:{t:"หยักเย็บ",ar:.55,p:{n:9},ext:{l:.14,r:.14,t:.1,b:.1},base:"scallop",stitch:1},
+  pillS:{t:"แคปซูลเย็บ",ar:.35,ext:{l:.4,r:.4,t:.12,b:.12},base:"pill",stitch:1},roundS:{t:"มุมมนเย็บ",ar:.6,p:{r:.25},ext:{l:.14,r:.14,t:.13,b:.13},base:"round",stitch:1},scallopS:{t:"หยักเย็บ",ar:.55,p:{n:9},ext:{l:.3,r:.3,t:.26,b:.26},base:"scallop",stitch:"round",si:.2,sp:{r:.32}},
   bear:{t:"หูหมี",ar:.5,ext:{t:.38},cute:1},cat:{t:"หูแมว",ar:.5,ext:{t:.42},cute:1},bunny:{t:"หูกระต่าย",ar:.62,ext:{t:.62},cute:1},crown:{t:"มงกุฎ",ar:.55,ext:{t:.5},cute:1},
   wave:{t:"คลื่น",ar:.4,cute:1},lace:{t:"ลูกไม้",ar:.55,ext:{l:.18,r:.18,t:.12,b:.12},cute:1},banner:{t:"แบนเนอร์",ar:.32,ext:{l:.55,r:.55,b:.25},cute:1},thought:{t:"เมฆคิด",ar:.62,ext:{b:.35,l:.15},cute:1},
   shield:{t:"โล่",ar:.62,ext:{b:.35},cute:1},house:{t:"บ้าน",ar:.62,ext:{t:.5},cute:1},candy:{t:"ลูกอม",ar:.32,ext:{l:.45,r:.45},cute:1},bow:{t:"โบว์",ar:.45,ext:{t:.45},cute:1},
@@ -930,7 +930,7 @@ function shapePath(kind,w,h,p){ { const S0=SHAPES[kind]; if(S0&&S0.base) return 
 }
 const iconCache={};
 // กรอบที่แสดงให้เลือก (กรอบอื่นยังเปิดงานเก่าได้)
-const SHAPES_SHOW=["round","roundS","pill","pillS","scallop","scallopS"], SHAPES_ICON=SHAPES_SHOW;
+const SHAPES_SHOW=["round","roundS","pill","pillS","scallop","scallopS","cloud"], SHAPES_ICON=SHAPES_SHOW;
 // พรีวิวกรอบ = วาดจริงแบบเดียวกับงาน (ชื่อตัวอย่าง + เส้นเย็บ + การ์ตูนตัวอย่าง)
 function shapeIcon(k,ic){ const lib=ic?(CFG.library||[]).find(l=>l.cat==="cartoon"):null, ck=k+(ic?"_i"+(lib?lib.id:""):"")+"|"+(ED.tpl?ED.tpl.id:""); if(iconCache[ck]) return iconCache[ck];
   const c=document.createElement("canvas"), CW=ic?340:220, CH=ic?96:150; c.width=CW; c.height=CH; const x=c.getContext("2d");
@@ -1213,7 +1213,7 @@ function renderTo(x,o,img,ch){ const col=ch==null?disp:(c=>chanGray(c,ch)); x.sa
       x.drawImage(src,0,0,o.w,o.h); } else imgOf(o.src).then(()=>draw()); }
   else if(o.type==="text"){ if(!o._lines) measure(o);
     if(o.frame){ const F=o.frame, pd=F.pad||0, E=fext(o), sw0=F.stroke&&F.stroke.on?F.stroke.w/2:0, L=E.l-sw0, R=E.r-sw0, Tt=E.t-sw0, Bb=E.b-sw0, P=shapePath(F.shape,o.w+L+R,o.h+Tt+Bb,F.p); x.save(); x.translate(-L,-Tt); if(F.fill){ x.fillStyle=col(F.fill); x.fill(P,P._eo?"evenodd":"nonzero"); } if(F.stroke&&F.stroke.on){ x.lineWidth=F.stroke.w; x.lineJoin="round"; x.strokeStyle=col(F.stroke.color); x.stroke(P); }
-      if(SHAPES[F.shape]&&SHAPES[F.shape].stitch){ const Wd=o.w+L+R, Hd=o.h+Tt+Bb, dd=Math.max((F.stroke&&F.stroke.on?F.stroke.w:0)*1.3,Hd*.085), P2=shapePath(F.shape,Wd-2*dd,Hd-2*dd,F.p); x.save(); x.translate(dd,dd); x.setLineDash([Hd*.075,Hd*.05]); x.lineCap="round"; x.lineWidth=Math.max(1,Hd*.022); x.strokeStyle=col(F.stroke&&F.stroke.on?F.stroke.color:(o.color||[0,0,0,100])); x.stroke(P2); x.restore(); }
+      if(SHAPES[F.shape]&&SHAPES[F.shape].stitch){ const Wd=o.w+L+R, Hd=o.h+Tt+Bb, ST=SHAPES[F.shape], dd=Math.max((F.stroke&&F.stroke.on?F.stroke.w:0)*1.3,Hd*(ST.si||.085)), P2=typeof ST.stitch==="string"?shapePath(ST.stitch,Wd-2*dd,Hd-2*dd,ST.sp):shapePath(F.shape,Wd-2*dd,Hd-2*dd,F.p); x.save(); x.translate(dd,dd); x.setLineDash([Hd*.075,Hd*.05]); x.lineCap="round"; x.lineWidth=Math.max(1,Hd*.022); x.strokeStyle=col(F.stroke&&F.stroke.on?F.stroke.color:(o.color||[0,0,0,100])); x.stroke(P2); x.restore(); }
       x.restore();
       if(F.icon){ const IR=iconRect(o), ix=IR.x, iy=IR.y, isz=IR.s;
         if(F.icon.src){ const im=ch==null?(ED.proof.get(F.icon.src)||ED.img.get(F.icon.src)):((ED.seps.get(F.icon.src)||[])[ch]); if(im){ const q=iconFit(o,im,IR); x.drawImage(ch==null?mipOf(im,q.w*ED.z*(window.devicePixelRatio||1)):im,q.x,q.y,q.w,q.h); } else if(ch==null) imgOf(F.icon.src).then(()=>draw()); }
